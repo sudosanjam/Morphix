@@ -36,44 +36,46 @@
 
 ## 3. Installation & Setup
 
-### 3.1 Windows Installation
+### 3.1 One-Click Setup from Git ZIP / Source (Recommended)
 
-#### Quick Start (Pre-built Executable)
-On Windows, you can simply run **`Morphix.exe`** (or `run_morphix.bat`) directly to start up the application:
-1. Double-click **`Morphix.exe`**.
-2. Morphix will start the local server and automatically open the desktop Web GUI in your browser at `http://127.0.0.1:7474`.
-3. You can also run `Morphix.exe` from PowerShell or Command Prompt with any CLI argument (e.g. `Morphix.exe convert photo.png --to webp` or `Morphix.exe doctor`).
+When you download and extract the Git ZIP package on any new computer:
 
-#### One-Click Windows Setup (`Morphix-Setup.exe`)
-1. Download or compile `Morphix-Setup.exe`.
-2. Run the installer. It installs per-user (no administrator privileges needed) into `%LOCALAPPDATA%\Programs\Morphix`.
-3. Creates Start Menu shortcuts, optional Desktop shortcut, and registers the `morphix` command in your User PATH.
-
-#### Portable Archive (`Morphix-v1.0.0-windows-x64.zip`)
-1. Extract the zip to any folder.
-2. Double-click `Morphix.exe` (or `run_morphix.bat`) to launch the Web GUI.
-3. Use `Morphix.exe` or `morphix.bat` from terminal for CLI operations.
-
-### 3.2 Linux Installation
-
-#### One-Command Setup (`install.sh`)
-```bash
-chmod +x packaging/linux/install.sh
-./packaging/linux/install.sh
+#### On Windows:
+Double-click or run the root installer:
+```cmd
+windows_install.bat
 ```
-- Installs into `~/.local/share/morphix` with an isolated per-user virtual environment.
-- Places `morphix` CLI in `~/.local/bin/morphix`.
-- Registers the desktop launcher in `~/.local/share/applications/morphix.desktop`.
-- Completely functional without `sudo` privileges.
+*(or run `powershell -ExecutionPolicy Bypass -File .\windows_install.ps1`)*
 
-#### Offline Bundle Workflow
-On an offline or air-gapped machine:
+- Automatically detects or prompts for Python 3 (>= 3.10).
+- Creates an isolated `.venv` virtual environment in the project directory.
+- Installs all dependencies (`requirements.txt`).
+- Creates a Desktop shortcut and root launcher `run_morphix.bat`.
+- Immediately launches the Morphix Web GUI in your default browser at `http://127.0.0.1:7474`.
+
+#### On Linux:
+Run the root installer:
 ```bash
-tar -xzf morphix-v1.0.0-linux-offline.tar.gz
-cd morphix
-chmod +x install.sh
-./install.sh
+./linux_install.sh
+# or: bash linux_install.sh
 ```
+- Checks for Python 3 (>= 3.10) and distro dependencies (`python3-venv`, `pip`).
+- Sets up an isolated `.venv` environment and installs dependencies.
+- Creates root launcher `./run_morphix.sh`, registers `~/.local/bin/morphix` in PATH, and adds `morphix.desktop`.
+- Immediately launches the Morphix Web GUI in your default browser at `http://127.0.0.1:7474`.
+
+---
+
+### 3.2 Pre-Packaged Binary Distributions
+
+#### Windows Pre-built Installer / Portable:
+- **`Morphix-Setup.exe`**: Inno Setup installer registering Start Menu and PATH.
+- **`Morphix.exe`**: Portable standalone executable. Double-click to run anywhere.
+
+#### Everyday Launching:
+After the initial one-click install, you can start Morphix at any time by:
+- **Windows**: Double-clicking `run_morphix.bat` or the Desktop shortcut.
+- **Linux**: Running `./run_morphix.sh` or typing `morphix` in your terminal.
 
 ---
 

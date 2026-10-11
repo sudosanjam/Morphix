@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "Universal Offline File Conversion, Optimization, and Processing Suite"
 readme = "README.md"
 authors = [{ name = "Morphix Engineering Team" }]
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.110.0",
@@ -30,6 +30,11 @@ dependencies = [
 
 [project.scripts]
 morphix = "app.cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+exclude = ["packaging*", "tests*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
