@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Morphix - Universal Offline File Conversion and Processing Suite">
+  <title>Morphix — Universal Offline File Conversion Suite</title>
+
+  <!-- Local Bundled Stylesheets -->
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/layout.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/views.css">
+</head>
+<body>
+  <div id="app-root">
+    <!-- 1. Top Bar -->
+    <header id="top-bar">
+      <div class="topbar-left">
+        <div class="brand-badge" data-nav="convert">
+          <svg class="brand-logo-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+          <span class="brand-title">Morphix</span>
+          <span class="brand-version">v1.0.0</span>
+        </div>
+      </div>
+
+      <div class="topbar-center">
+        <button id="topbar-search-trigger" class="command-search-trigger">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <span>Search formats, tools, commands...</span>
+          </div>
+          <span class="shortcut-kbd">Ctrl+K</span>
+        </button>
+      </div>
+
+      <div class="topbar-right">
+        <button id="topbar-queue-btn" class="btn btn-secondary btn-sm" title="Active Jobs Queue">
+          <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+          <span>Queue</span>
+          <span id="topbar-queue-count" class="badge badge-primary" style="margin-left: 2px;">0</span>
+        </button>
+
+        <button id="topbar-theme-btn" class="btn-icon" title="Toggle Theme">
+          <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+
+        <button class="btn-icon" data-nav="settings" title="Settings">
+          <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 2. Main Container with Sidebar and Viewport -->
+    <div id="main-container">
+      <!-- Left Sidebar Navigation -->
+      <aside id="sidebar">
+        <nav class="sidebar-nav">
+          <a class="nav-item active" data-nav="convert">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+            <span class="nav-label">Convert</span>
+          </a>
+
+          <a class="nav-item" data-nav="batch">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+            <span class="nav-label">Batch Jobs</span>
+          </a>
+
+          <a class="nav-item" data-nav="images">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+            <span class="nav-label">Image Tools</span>
+          </a>
+
+          <a class="nav-item" data-nav="audio">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+            <span class="nav-label">Audio Tools</span>
+          </a>
+
+          <a class="nav-item" data-nav="documents">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            <span class="nav-label">Documents</span>
+          </a>
+
+          <div class="sidebar-divider"></div>
+
+          <a class="nav-item" data-nav="history">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span class="nav-label">History</span>
+          </a>
+
+          <a class="nav-item" data-nav="presets">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <span class="nav-label">Presets</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <a class="nav-item" data-nav="diagnostics">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+            <span class="nav-label">Diagnostics</span>
+          </a>
+
+          <a class="nav-item" data-nav="settings">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <span class="nav-label">Settings</span>
+          </a>
+        </div>
+      </aside>
+
+      <!-- Central Workspace Viewport -->
+      <main id="workspace-viewport">
+        <section id="view-convert" class="view-container active"></section>
+        <section id="view-batch" class="view-container"></section>
+        <section id="view-images" class="view-container"></section>
+        <section id="view-audio" class="view-container"></section>
+        <section id="view-documents" class="view-container"></section>
+        <section id="view-history" class="view-container"></section>
+        <section id="view-presets" class="view-container"></section>
+        <section id="view-diagnostics" class="view-container"></section>
+        <section id="view-settings" class="view-container"></section>
+      </main>
+
+      <!-- Slide-out Active Jobs Queue Drawer -->
+      <aside id="queue-drawer">
+        <div class="drawer-header">
+          <strong style="font-size: var(--font-size-md);">Active Queue</strong>
+          <button id="queue-drawer-close" class="btn-icon">
+            <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="drawer-body" id="queue-drawer-body">
+          <p style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px 0;">Queue is empty.</p>
+        </div>
+      </aside>
+    </div>
+
+    <!-- 3. Status Bar -->
+    <footer id="status-bar">
+      <div class="status-left">
+        <span class="status-badge">
+          <span class="status-dot"></span>
+          <span>100% Offline Local Processing</span>
+        </span>
+        <span id="status-engines-summary" style="color: var(--text-muted);">Active Engines: Pillow, FFmpeg, PDF, OpenPyXL</span>
+      </div>
+      <div class="status-right">
+        <span>Zero Network Telemetry</span>
+        <span>Morphix v1.0.0</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Command Palette Modal -->
+  <div id="modal-command-palette" class="modal-backdrop">
+    <div class="modal-container command-palette-modal">
+      <div class="palette-input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="palette-search-input" class="palette-input" placeholder="Type a command or format..." autocomplete="off" />
+      </div>
+      <div class="palette-results" id="palette-results-list"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Application JS Entrypoint -->
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>

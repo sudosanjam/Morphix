@@ -1,0 +1,34 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+!packaging/windows/morphix.spec
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Temporary files & storage
+.morphix_temp/
+*.log
+morphix.db
+morphix_history.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store

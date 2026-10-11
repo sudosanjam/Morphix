@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Morphix
+GenericName=File Conversion Suite
+Comment=Universal Offline File Conversion, Optimization, and Processing Utility
+Exec=morphix serve --no-open-browser
+Icon=morphix
+Terminal=false
+Categories=Utility;AudioVideo;Graphics;Office;
+Keywords=converter;audio;image;pdf;ffmpeg;office;
+StartupNotify=true

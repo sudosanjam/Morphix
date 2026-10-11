@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "morphix"
+version = "1.0.0"
+description = "Universal Offline File Conversion, Optimization, and Processing Suite"
+readme = "README.md"
+authors = [{ name = "Morphix Engineering Team" }]
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.28.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "typer>=0.12.0",
+    "rich>=13.7.0",
+    "pillow>=10.2.0",
+    "pypdf>=4.1.0",
+    "reportlab>=4.1.0",
+    "openpyxl>=3.1.2",
+    "imageio-ffmpeg>=0.5.1",
+    "python-multipart>=0.0.9",
+    "markdown>=3.6",
+    "pyyaml>=6.0.1",
+    "defusedxml>=0.7.1",
+]
+
+[project.scripts]
+morphix = "app.cli.main:app"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+asyncio_mode = "auto"
