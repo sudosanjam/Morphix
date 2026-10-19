@@ -2,20 +2,20 @@
  * Morphix Application Bootstrap & Navigation Router.
  */
 
-import { state } from "./state.js";
-import { api } from "./api.js";
-import { ICONS, showToast } from "./ui.js";
+import { state } from "./state.js?v=1.1.0";
+import { api } from "./api.js?v=1.1.0";
+import { ICONS, showToast } from "./ui.js?v=1.1.0";
 
-import { initConvertView } from "./views/convert.js";
-import { initBatchView } from "./views/batch.js";
-import { initImagesView } from "./views/images.js";
-import { initAudioView } from "./views/audio.js";
-import { initDocumentsView } from "./views/documents.js";
-import { initHistoryView } from "./views/history.js";
-import { initPresetsView } from "./views/presets.js";
-import { initDiagnosticsView } from "./views/diagnostics.js";
-import { initSettingsView } from "./views/settings.js";
-import { initCommandPalette } from "./components/command_palette.js";
+import { initConvertView } from "./views/convert.js?v=1.1.0";
+import { initBatchView } from "./views/batch.js?v=1.1.0";
+import { initImagesView } from "./views/images.js?v=1.1.0";
+import { initAudioView } from "./views/audio.js?v=1.1.0";
+import { initDocumentsView } from "./views/documents.js?v=1.1.0";
+import { initHistoryView } from "./views/history.js?v=1.1.0";
+import { initPresetsView } from "./views/presets.js?v=1.1.0";
+import { initDiagnosticsView } from "./views/diagnostics.js?v=1.1.0";
+import { initSettingsView } from "./views/settings.js?v=1.1.0";
+import { initCommandPalette } from "./components/command_palette.js?v=1.1.0";
 
 document.addEventListener("DOMContentLoaded", async () => {
   // Apply saved theme immediately

@@ -33,8 +33,18 @@ def validate_output_file(
 
     fmt = expected_format.lower().lstrip(".")
 
-    # Deep validation by type
-    if validation_type == "image" or fmt in ("png", "jpg", "jpeg", "webp", "gif", "bmp", "tiff", "ico"):
+    # Deep validation by format
+    if output_path.suffix.lower() == ".zip":
+        import zipfile
+        try:
+            with zipfile.ZipFile(output_path, "r") as zf:
+                if len(zf.namelist()) == 0:
+                    raise ValidationError("Generated ZIP archive is empty.")
+            return True
+        except Exception as e:
+            raise ValidationError(f"Generated ZIP archive is invalid: {str(e)}")
+
+    if fmt in ("png", "jpg", "jpeg", "webp", "gif", "bmp", "tiff", "ico") or validation_type == "image":
         try:
             with Image.open(output_path) as img:
                 img.verify()
@@ -46,7 +56,7 @@ def validate_output_file(
         except Exception as e:
             raise ValidationError(f"Generated image failed validation: {str(e)}")
 
-    elif validation_type == "audio" or fmt in ("mp3", "wav", "flac", "aac", "m4a", "ogg", "opus", "aiff"):
+    elif fmt in ("mp3", "wav", "flac", "aac", "m4a", "ogg", "opus", "aiff") or validation_type == "audio":
         if FFmpegEngine.is_available():
             info = FFmpegEngine.probe_media(output_path)
             # Duration should be detected and > 0
@@ -54,7 +64,7 @@ def validate_output_file(
             if dur is not None and dur <= 0:
                 raise ValidationError("Generated audio file has 0 duration.")
 
-    elif validation_type == "pdf" or fmt == "pdf":
+    elif fmt == "pdf":
         try:
             reader = pypdf.PdfReader(str(output_path))
             if len(reader.pages) == 0:
@@ -62,7 +72,7 @@ def validate_output_file(
         except Exception as e:
             raise ValidationError(f"Generated PDF failed validation: {str(e)}")
 
-    elif validation_type == "data" or fmt in ("json", "yaml", "yml", "xml"):
+    elif fmt in ("json", "yaml", "yml", "xml") or validation_type == "data":
         try:
             if fmt == "json":
                 with open(output_path, "r", encoding="utf-8") as f:

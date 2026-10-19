@@ -126,12 +126,19 @@ function renderDynamicDocFields(format) {
           <select id="doc-action-sel" class="input-select">
             <option value="pdf">Modify PDF (Page selection, Rotation, Metadata)</option>
             <option value="txt">Extract Plain Text (.txt)</option>
+            <option value="png">Convert Pages to PNG Images (.png)</option>
+            <option value="jpg">Convert Pages to JPEG Images (.jpg)</option>
+            <option value="webp">Convert Pages to WebP Images (.webp)</option>
+            <option value="tiff">Convert Pages to TIFF Images (.tiff)</option>
+            <option value="bmp">Convert Pages to BMP Bitmaps (.bmp)</option>
           </select>
         </div>
+
+        <!-- Extra options container -->
         <div id="pdf-extra-options" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
           <div class="form-group">
             <label class="form-label">Page Range Filter</label>
-            <input type="text" id="pdf-page-range" class="input-text" placeholder="e.g. 1-3, 5 (blank for all)" />
+            <input type="text" id="pdf-page-range" class="input-text" placeholder="e.g. 1-3, 5 (blank for all pages)" />
           </div>
           <div class="form-group">
             <label class="form-label">Rotate Pages</label>
@@ -143,11 +150,58 @@ function renderDynamicDocFields(format) {
             </select>
           </div>
         </div>
+
+        <!-- Image-specific options (DPI & Quality) -->
+        <div id="pdf-image-options" style="display: none; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+          <div class="form-group">
+            <label class="form-label">Resolution (DPI)</label>
+            <select id="pdf-dpi-sel" class="input-select">
+              <option value="72">72 DPI (Standard Web / Fast)</option>
+              <option value="150" selected>150 DPI (Crisp / Recommended)</option>
+              <option value="200">200 DPI (High Clarity)</option>
+              <option value="300">300 DPI (Ultra / Print Quality)</option>
+            </select>
+          </div>
+          <div class="form-group" id="pdf-quality-group">
+            <label class="form-label">
+              <span>Image Quality</span>
+              <span id="pdf-quality-val" style="font-family: var(--font-family-mono); font-size: 11px;">90%</span>
+            </label>
+            <div class="slider-wrapper">
+              <input type="range" id="pdf-quality-slider" class="range-slider" min="1" max="100" value="90" />
+            </div>
+          </div>
+        </div>
       </div>
     `;
 
-    document.getElementById("doc-action-sel").addEventListener("change", (e) => {
-      document.getElementById("pdf-extra-options").style.display = e.target.value === "pdf" ? "grid" : "none";
+    const actionSel = document.getElementById("doc-action-sel");
+    const extraOpts = document.getElementById("pdf-extra-options");
+    const imageOpts = document.getElementById("pdf-image-options");
+    const qualityGroup = document.getElementById("pdf-quality-group");
+    const qualitySlider = document.getElementById("pdf-quality-slider");
+    const qualityVal = document.getElementById("pdf-quality-val");
+
+    if (qualitySlider && qualityVal) {
+      qualitySlider.addEventListener("input", (e) => {
+        qualityVal.textContent = `${e.target.value}%`;
+      });
+    }
+
+    actionSel.addEventListener("change", (e) => {
+      const val = e.target.value;
+      if (val === "pdf") {
+        extraOpts.style.display = "grid";
+        imageOpts.style.display = "none";
+      } else if (val === "txt") {
+        extraOpts.style.display = "none";
+        imageOpts.style.display = "none";
+      } else {
+        // Image targets
+        extraOpts.style.display = "grid";
+        imageOpts.style.display = "grid";
+        qualityGroup.style.display = ["jpg", "jpeg", "webp"].includes(val) ? "flex" : "none";
+      }
     });
 
   } else if (["md", "markdown", "txt"].includes(fmt)) {
@@ -219,6 +273,16 @@ async function executeDocOperation() {
     settings.rotate_pages = Number(rotateSelect.value);
   }
 
+  const dpiSelect = document.getElementById("pdf-dpi-sel");
+  if (dpiSelect) {
+    settings.dpi = Number(dpiSelect.value);
+  }
+
+  const qualitySlider = document.getElementById("pdf-quality-slider");
+  if (qualitySlider) {
+    settings.quality = Number(qualitySlider.value);
+  }
+
   const delimSelect = document.getElementById("sheet-delimiter");
   if (delimSelect) {
     settings.delimiter = delimSelect.value;
@@ -236,7 +300,7 @@ async function executeDocOperation() {
     });
 
     let finished = null;
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 40; i++) {
       await new Promise(r => setTimeout(r, 600));
       const status = await api.getJob(job.id);
       if (status.status === "completed") {
@@ -254,11 +318,75 @@ async function executeDocOperation() {
       const folderBtn = document.getElementById("doc-folder-btn");
       const resultMsg = document.getElementById("doc-result-msg");
 
+      // Check if multi-file output (e.g. multiple PDF pages converted to images)
+      let filesData = null;
+      try {
+        filesData = await api.getJobFiles(finished.id);
+      } catch (_) {}
+
       resultBox.style.display = "flex";
-      resultMsg.textContent = `Generated ${targetFmt.toUpperCase()} (${formatBytes(finished.output_size_bytes)})`;
-      downloadBtn.href = `/api/jobs/${finished.id}/download`;
-      downloadBtn.download = `${loadedDoc.file.name.split('.')[0]}_out.${targetFmt}`;
-      folderBtn.onclick = () => api.openFolder(finished.target_path);
+      resultBox.style.flexDirection = "column";
+      resultBox.style.gap = "var(--space-3)";
+
+      if (filesData && filesData.is_multi_file) {
+        resultMsg.textContent = `Successfully converted ${filesData.total_files} pages to ${targetFmt.toUpperCase()} (${formatBytes(finished.output_size_bytes)})`;
+        downloadBtn.textContent = `Download All (${filesData.total_files} Pages ZIP)`;
+        downloadBtn.href = `/api/jobs/${finished.id}/download`;
+        downloadBtn.download = `${loadedDoc.file.name.split('.')[0]}_${targetFmt}_pages.zip`;
+        folderBtn.onclick = () => api.openFolder(finished.target_path);
+
+        // Remove any existing pages gallery if previously appended
+        let gallery = document.getElementById("doc-pages-gallery");
+        if (!gallery) {
+          gallery = document.createElement("div");
+          gallery.id = "doc-pages-gallery";
+          resultBox.appendChild(gallery);
+        }
+
+        gallery.innerHTML = `
+          <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-3); width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+              <span style="font-weight: 600; font-size: var(--font-size-sm); color: var(--text-primary);">
+                Individual Converted Pages (${filesData.total_files})
+              </span>
+              <span style="font-size: var(--font-size-xs); color: var(--text-muted);">
+                Click any page to download individually
+              </span>
+            </div>
+            <div class="pdf-pages-grid">
+              ${filesData.files.map(f => `
+                <div class="pdf-page-card">
+                  <div class="pdf-page-thumb-wrapper">
+                    <img src="${f.preview_url}" class="pdf-page-thumb" alt="${f.filename}" loading="lazy" />
+                  </div>
+                  <div class="pdf-page-meta">
+                    <span class="pdf-page-name">Page ${f.index}</span>
+                    <span class="pdf-page-size">${formatBytes(f.size_bytes)}</span>
+                  </div>
+                  <div style="display: flex; gap: var(--space-2); width: 100%; margin-top: var(--space-1);">
+                    <a href="${f.download_url}" class="btn btn-primary btn-sm" style="flex: 1;" download="${f.filename}">
+                      <span style="width: 14px; height: 14px;">${ICONS.download}</span> Download
+                    </a>
+                    <a href="${f.preview_url}" target="_blank" class="btn btn-secondary btn-sm" title="Open full-size in new tab">
+                      <span style="width: 14px; height: 14px;">↗</span>
+                    </a>
+                  </div>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        `;
+      } else {
+        // Single file result
+        resultMsg.textContent = `Generated ${targetFmt.toUpperCase()} (${formatBytes(finished.output_size_bytes)})`;
+        downloadBtn.textContent = "Download";
+        downloadBtn.href = `/api/jobs/${finished.id}/download`;
+        downloadBtn.download = `${loadedDoc.file.name.split('.')[0]}_out.${targetFmt}`;
+        folderBtn.onclick = () => api.openFolder(finished.target_path);
+
+        const existingGallery = document.getElementById("doc-pages-gallery");
+        if (existingGallery) existingGallery.remove();
+      }
     }
   } catch (err) {
     showToast(`Document operation failed: ${err.message}`, "error");

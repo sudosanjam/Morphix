@@ -47,6 +47,16 @@ app.add_middleware(
 app.include_router(api_router, prefix="/api")
 
 
+# No-cache static files for instant hot updates
+class NoCacheStaticFiles(StaticFiles):
+    def file_response(self, *args, **kwargs) -> FileResponse:
+        resp = super().file_response(*args, **kwargs)
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
+
+
 # Security headers middleware
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
@@ -55,21 +65,27 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
     return response
 
 
 # Static file serving
 if (WEB_DIR / "css").exists():
-    app.mount("/css", StaticFiles(directory=str(WEB_DIR / "css")), name="css")
+    app.mount("/css", NoCacheStaticFiles(directory=str(WEB_DIR / "css")), name="css")
 if (WEB_DIR / "js").exists():
-    app.mount("/js", StaticFiles(directory=str(WEB_DIR / "js")), name="js")
+    app.mount("/js", NoCacheStaticFiles(directory=str(WEB_DIR / "js")), name="js")
 if (WEB_DIR / "assets").exists():
-    app.mount("/assets", StaticFiles(directory=str(WEB_DIR / "assets")), name="assets")
+    app.mount("/assets", NoCacheStaticFiles(directory=str(WEB_DIR / "assets")), name="assets")
 
 
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
     index_file = WEB_DIR / "index.html"
     if index_file.exists():
-        return FileResponse(index_file, media_type="text/html")
+        resp = FileResponse(index_file, media_type="text/html")
+        resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
     return HTMLResponse("<h1>Morphix</h1><p>Web UI index not found.</p>", status_code=404)

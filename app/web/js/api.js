@@ -53,6 +53,7 @@ export const api = {
 
   getJobs: () => request("/api/jobs"),
   getJob: (jobId) => request(`/api/jobs/${jobId}`),
+  getJobFiles: (jobId) => request(`/api/jobs/${jobId}/files`),
   cancelJob: (jobId) => request(`/api/jobs/${jobId}/cancel`, { method: "POST" }),
   
   openFolder: (path) => {

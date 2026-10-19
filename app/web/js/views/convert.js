@@ -240,10 +240,24 @@ function renderQueue() {
     `;
 
     if (item.status === "completed" && item.jobId) {
+      if (item.outputFiles && item.outputFiles.length > 1) {
+        actionsHtml += `
+          <button class="btn btn-primary btn-sm btn-view-pages" data-id="${item.id}" title="View & Download ${item.outputFiles.length} Individual Pages">
+            <span style="width: 14px; height: 14px;">${ICONS.document || ICONS.convert}</span>
+            <span>${item.outputFiles.length} Pages</span>
+          </button>
+          <a href="/api/jobs/${item.jobId}/download" class="btn btn-secondary btn-sm" download title="Download All (${item.outputFiles.length} Pages ZIP)">
+            <span style="width: 14px; height: 14px;">${ICONS.download}</span>
+          </a>
+        `;
+      } else {
+        actionsHtml += `
+          <a href="/api/jobs/${item.jobId}/download" class="btn btn-secondary btn-sm" download title="Download Output">
+            <span style="width: 14px; height: 14px;">${ICONS.download}</span>
+          </a>
+        `;
+      }
       actionsHtml += `
-        <a href="/api/jobs/${item.jobId}/download" class="btn btn-secondary btn-sm" download title="Download Output">
-          <span style="width: 14px; height: 14px;">${ICONS.download}</span>
-        </a>
         <button class="btn btn-secondary btn-sm btn-open-folder" data-path="${item.outputPath}" title="Reveal in Folder">
           <span style="width: 14px; height: 14px;">${ICONS.folder}</span>
         </button>
@@ -287,6 +301,15 @@ function renderQueue() {
       sel.addEventListener("change", (e) => {
         state.updateQueueItem(item.id, { selectedTarget: e.target.value });
         renderSettingsPanel();
+      });
+    }
+
+    // View individual pages button
+    const pagesBtn = tr.querySelector(".btn-view-pages");
+    if (pagesBtn) {
+      pagesBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openPagesModal(item);
       });
     }
 
@@ -436,6 +459,34 @@ function renderSettingsPanel() {
     `;
   }
 
+  if (item.format === "pdf" && ["png", "jpg", "jpeg", "webp", "bmp", "tiff"].includes(targetFmt)) {
+    const dpiVal = item.settings.dpi || 150;
+    html += `
+      <div class="form-group">
+        <label class="form-label">Page Range Filter</label>
+        <input type="text" class="input-text setting-input" data-key="page_range" placeholder="e.g. 1-3, 5 (blank for all)" value="${item.settings.page_range || ''}" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Resolution (DPI)</label>
+        <select class="input-select setting-input" data-key="dpi">
+          <option value="72" ${dpiVal === 72 ? "selected" : ""}>72 DPI (Standard Web)</option>
+          <option value="150" ${dpiVal === 150 ? "selected" : ""}>150 DPI (Crisp / Recommended)</option>
+          <option value="200" ${dpiVal === 200 ? "selected" : ""}>200 DPI (High Clarity)</option>
+          <option value="300" ${dpiVal === 300 ? "selected" : ""}>300 DPI (Ultra / Print Quality)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Rotate Pages</label>
+        <select class="input-select setting-input" data-key="rotate_pages">
+          <option value="0" ${item.settings.rotate_pages === 0 ? "selected" : ""}>0° (No rotation)</option>
+          <option value="90" ${item.settings.rotate_pages === 90 ? "selected" : ""}>90° Clockwise</option>
+          <option value="180" ${item.settings.rotate_pages === 180 ? "selected" : ""}>180° Flip</option>
+          <option value="270" ${item.settings.rotate_pages === 270 ? "selected" : ""}>270° Counter-clockwise</option>
+        </select>
+      </div>
+    `;
+  }
+
   if (["csv", "tsv"].includes(targetFmt)) {
     html += `
       <div class="form-group">
@@ -445,6 +496,45 @@ function renderSettingsPanel() {
           <option value="tab" ${item.settings.delimiter === "tab" ? "selected" : ""}>Tab (\\t)</option>
           <option value="semicolon" ${item.settings.delimiter === "semicolon" ? "selected" : ""}>Semicolon (;)</option>
         </select>
+      </div>
+    `;
+  }
+
+  // Display completed page breakdown in sidebar if multi-file
+  if (item.status === "completed" && item.outputFiles && item.outputFiles.length > 1) {
+    html += `
+      <div style="border-top: 1px solid var(--border-subtle); padding-top: var(--space-3); margin-top: var(--space-3);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2);">
+          <strong style="font-size: var(--font-size-xs); color: var(--text-primary);">
+            Converted Pages (${item.outputFiles.length})
+          </strong>
+          <button class="btn btn-primary btn-sm" id="btn-sidebar-view-pages" style="height: 24px; padding: 0 var(--space-2); font-size: 11px;">
+            Open Gallery
+          </button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: var(--space-2); max-height: 220px; overflow-y: auto;">
+          ${item.outputFiles.map((f, i) => {
+            const fname = f.split(/[/\\\\]/).pop();
+            return `
+              <div style="display: flex; align-items: center; justify-content: space-between; padding: var(--space-1) var(--space-2); background: var(--bg-surface-elevated); border-radius: var(--radius-sm); font-size: 11px; border: 1px solid var(--border-subtle);">
+                <div style="display: flex; align-items: center; gap: var(--space-2); overflow: hidden;">
+                  <span class="badge badge-primary" style="font-size: 10px; padding: 1px 4px;">P${i + 1}</span>
+                  <span style="max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${fname}">
+                    ${fname}
+                  </span>
+                </div>
+                <div style="display: flex; gap: 4px;">
+                  <a href="/api/jobs/${item.jobId}/download/${i + 1}" class="btn btn-secondary btn-sm" style="height: 22px; padding: 0 var(--space-2); font-size: 10px;" download="${fname}" title="Download Page ${i + 1}">
+                    ${ICONS.download}
+                  </a>
+                  <a href="/api/jobs/${item.jobId}/preview/${i + 1}" target="_blank" class="btn btn-ghost btn-sm" style="height: 22px; padding: 0 4px; font-size: 10px;" title="Preview">
+                    ↗
+                  </a>
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
       </div>
     `;
   }
@@ -473,6 +563,11 @@ function renderSettingsPanel() {
     input.addEventListener("input", updateHandler);
     input.addEventListener("change", updateHandler);
   });
+
+  const sidebarGalleryBtn = panelBody.querySelector("#btn-sidebar-view-pages");
+  if (sidebarGalleryBtn) {
+    sidebarGalleryBtn.addEventListener("click", () => openPagesModal(item));
+  }
 }
 
 async function startConversionQueue() {
@@ -531,6 +626,7 @@ async function pollActiveJobs() {
       if (job.status === "completed") {
         item.status = "completed";
         item.progress = 100;
+        item.outputFiles = job.output_files || [];
         showToast(`Converted: ${item.name}`, "success");
       } else if (job.status === "failed") {
         item.status = "failed";
@@ -541,5 +637,100 @@ async function pollActiveJobs() {
     renderQueue();
   } catch (err) {
     console.error("Poll error:", err);
+  }
+}
+
+async function openPagesModal(item) {
+  try {
+    const filesData = await api.getJobFiles(item.jobId);
+    if (!filesData.files || filesData.files.length === 0) {
+      showToast("No individual page files found.", "info");
+      return;
+    }
+
+    const modalId = "pages-modal-dialog";
+    let modal = document.getElementById(modalId);
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = modalId;
+      modal.className = "modal-backdrop";
+      document.body.appendChild(modal);
+    }
+
+    modal.innerHTML = `
+      <div class="modal-container" style="max-width: 820px; width: 92%;">
+        <div class="modal-header">
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            <h3 class="modal-title" style="margin: 0; font-size: var(--font-size-md);">
+              ${item.name} · Converted Pages
+            </h3>
+            <span class="badge badge-primary">${filesData.total_files} Pages (${item.selectedTarget.toUpperCase()})</span>
+          </div>
+          <button class="btn btn-ghost btn-sm btn-close-modal" title="Close">
+            <span style="width: 16px; height: 16px;">${ICONS.close}</span>
+          </button>
+        </div>
+        <div class="modal-body" style="max-height: 65vh; overflow-y: auto;">
+          <p style="color: var(--text-muted); font-size: var(--font-size-xs); margin-top: 0; margin-bottom: var(--space-3);">
+            Preview or download any individual page below, or download all pages together in a single ZIP file.
+          </p>
+          <div class="pdf-pages-grid">
+            ${filesData.files.map(f => `
+              <div class="pdf-page-card">
+                <div class="pdf-page-thumb-wrapper">
+                  <img src="${f.preview_url}" class="pdf-page-thumb" alt="${f.filename}" loading="lazy" />
+                </div>
+                <div class="pdf-page-meta">
+                  <span class="pdf-page-name">Page ${f.index}</span>
+                  <span class="pdf-page-size">${formatBytes(f.size_bytes)}</span>
+                </div>
+                <div style="display: flex; gap: var(--space-2); width: 100%; margin-top: var(--space-1);">
+                  <a href="${f.download_url}" class="btn btn-primary btn-sm" style="flex: 1;" download="${f.filename}">
+                    <span style="width: 14px; height: 14px;">${ICONS.download}</span> Download
+                  </a>
+                  <a href="${f.preview_url}" target="_blank" class="btn btn-secondary btn-sm" title="View Fullscreen">
+                    <span style="width: 14px; height: 14px;">↗</span>
+                  </a>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+        <div class="modal-footer" style="display: flex; justify-content: space-between;">
+          <button class="btn btn-secondary btn-sm btn-modal-folder">
+            <span style="width: 14px; height: 14px;">${ICONS.folder}</span> Reveal in Folder
+          </button>
+          <div style="display: flex; gap: var(--space-2);">
+            <a href="/api/jobs/${item.jobId}/download" class="btn btn-primary btn-sm" download>
+              <span style="width: 14px; height: 14px;">${ICONS.download}</span> Download All (ZIP)
+            </a>
+            <button class="btn btn-secondary btn-sm btn-close-modal">Close</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    modal.classList.add("open");
+
+    const closeBtns = modal.querySelectorAll(".btn-close-modal");
+    closeBtns.forEach(b => b.addEventListener("click", () => modal.classList.remove("open")));
+
+    const folderBtn = modal.querySelector(".btn-modal-folder");
+    if (folderBtn) {
+      folderBtn.addEventListener("click", () => {
+        api.openFolder(item.outputPath).catch(err => {
+          showToast(`Could not open folder: ${err.message}`, "error");
+        });
+      });
+    }
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        modal.classList.remove("open");
+      }
+    });
+
+  } catch (err) {
+    showToast(`Failed to load page list: ${err.message}`, "error");
   }
 }

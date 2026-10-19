@@ -3,7 +3,7 @@
 import time
 import shutil
 from pathlib import Path
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Optional, Callable, List
 
 from app.core.planner import PlannedJob
 from app.core.registry import ENGINE_MAP
@@ -25,7 +25,8 @@ class ConversionResult:
         source_size_bytes: int,
         output_size_bytes: int,
         engine_used: str,
-        warnings: list
+        warnings: list,
+        output_files: Optional[List[Path]] = None
     ):
         self.source_path = source_path
         self.output_path = output_path
@@ -36,11 +37,13 @@ class ConversionResult:
         self.output_size_bytes = output_size_bytes
         self.engine_used = engine_used
         self.warnings = warnings
+        self.output_files = output_files or [output_path]
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "source_path": str(self.source_path),
             "output_path": str(self.output_path),
+            "output_files": [str(p) for p in self.output_files],
             "source_format": self.source_format,
             "target_format": self.target_format,
             "duration_seconds": round(self.duration_seconds, 3),
@@ -113,6 +116,12 @@ def execute_conversion(
         if progress_callback:
             progress_callback(100, "Done")
 
+        output_files = []
+        if hasattr(engine_cls, "get_last_output_files"):
+            output_files = engine_cls.get_last_output_files()
+        if not output_files:
+            output_files = [result_path]
+
         return ConversionResult(
             source_path=source_p,
             output_path=result_path,
@@ -122,7 +131,8 @@ def execute_conversion(
             source_size_bytes=src_size,
             output_size_bytes=out_size,
             engine_used=engine_name,
-            warnings=planned_job.warnings
+            warnings=planned_job.warnings,
+            output_files=output_files
         )
 
     except Exception as e:

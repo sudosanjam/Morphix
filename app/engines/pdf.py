@@ -1,6 +1,6 @@
-"""PDF operations, text extraction, page manipulation, and document rendering."""
-
 import io
+import zipfile
+import threading
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 import pypdf
@@ -11,6 +11,11 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from PIL import Image
 
+try:
+    import pypdfium2 as pdfium
+except ImportError:
+    pdfium = None
+
 from app.engines.base import EngineCapability
 from app.core.errors import ConversionFailedError, ValidationError
 
@@ -20,7 +25,17 @@ class PDFEngine(EngineCapability):
     display_name = "Morphix PDF Engine"
 
     SUPPORTED_INPUTS = ["pdf", "txt", "md", "png", "jpg", "jpeg"]
-    SUPPORTED_OUTPUTS = ["pdf", "txt"]
+    SUPPORTED_OUTPUTS = ["pdf", "txt", "png", "jpg", "jpeg", "webp", "bmp", "tiff"]
+
+    _tls = threading.local()
+
+    @classmethod
+    def get_last_output_files(cls) -> List[Path]:
+        return getattr(cls._tls, "output_files", [])
+
+    @classmethod
+    def _set_last_output_files(cls, files: List[Path]):
+        cls._tls.output_files = files
 
     @classmethod
     def is_available(cls) -> bool:
@@ -33,14 +48,22 @@ class PDFEngine(EngineCapability):
 
     @classmethod
     def get_version(cls) -> Optional[str]:
+        versions = []
         try:
-            return f"pypdf {pypdf.__version__}"
+            import pypdf
+            versions.append(f"pypdf {pypdf.__version__}")
         except Exception:
-            return None
+            pass
+        if pdfium is not None:
+            try:
+                versions.append(f"pypdfium2 {pdfium.__version__}")
+            except Exception:
+                pass
+        return " | ".join(versions) if versions else None
 
     @classmethod
     def get_binary_path(cls) -> Optional[str]:
-        return "bundled-python (pypdf & reportlab)"
+        return "bundled-python (pypdf, reportlab, pypdfium2)"
 
     @classmethod
     def inspect_pdf(cls, file_path: Path) -> Dict[str, Any]:
@@ -86,6 +109,7 @@ class PDFEngine(EngineCapability):
         try:
             # 1. PDF -> TXT (Text extraction)
             if src_ext == "pdf" and tgt_fmt == "txt":
+                cls._set_last_output_files([target_path])
                 reader = pypdf.PdfReader(str(source_path))
                 total = len(reader.pages)
                 extracted_text = []
@@ -104,6 +128,7 @@ class PDFEngine(EngineCapability):
 
             # 2. PDF -> PDF (Page operations, metadata editing, rotation, page range)
             elif src_ext == "pdf" and tgt_fmt == "pdf":
+                cls._set_last_output_files([target_path])
                 reader = pypdf.PdfReader(str(source_path))
                 writer = pypdf.PdfWriter()
 
@@ -114,7 +139,7 @@ class PDFEngine(EngineCapability):
 
                 if page_range_str:
                     # e.g. "1-3, 5"
-                    for part in page_range_str.split(","):
+                    for part in str(page_range_str).split(","):
                         part = part.strip()
                         if "-" in part:
                             s, e = part.split("-", 1)
@@ -156,8 +181,126 @@ class PDFEngine(EngineCapability):
                     progress_cb(100, "PDF processing complete.")
                 return target_path
 
-            # 3. TXT / MD -> PDF (Document rendering)
+            # 3. PDF -> Images (PNG, JPG, JPEG, WEBP, BMP, TIFF)
+            elif src_ext == "pdf" and tgt_fmt in ("png", "jpg", "jpeg", "webp", "bmp", "tiff"):
+                norm_fmt = "jpg" if tgt_fmt == "jpeg" else tgt_fmt
+                if pdfium is None:
+                    raise ConversionFailedError(
+                        "pypdfium2 library is required to render PDF pages to images. "
+                        "Install it via: pip install pypdfium2"
+                    )
+
+                pdf_doc = pdfium.PdfDocument(str(source_path))
+                total_pages = len(pdf_doc)
+                if total_pages == 0:
+                    raise ConversionFailedError("PDF document contains no pages.")
+
+                # Parse page range
+                page_range_str = settings.get("page_range")
+                target_pages: List[int] = []
+                if page_range_str:
+                    for part in str(page_range_str).split(","):
+                        part = part.strip()
+                        if "-" in part:
+                            s, e = part.split("-", 1)
+                            start = max(1, int(s.strip()))
+                            end = min(total_pages, int(e.strip()))
+                            target_pages.extend(range(start - 1, end))
+                        elif part.isdigit():
+                            p = int(part)
+                            if 1 <= p <= total_pages:
+                                target_pages.append(p - 1)
+                else:
+                    target_pages = list(range(total_pages))
+
+                if not target_pages:
+                    target_pages = list(range(total_pages))
+
+                # Deduplicate and sort pages
+                target_pages = sorted(list(dict.fromkeys(target_pages)))
+
+                dpi = int(settings.get("dpi", 150))
+                # 72 pt per inch base scale
+                scale = max(0.5, min(dpi / 72.0, 6.0))
+                rotate = int(settings.get("rotate_pages", 0))
+                quality = int(settings.get("quality", 90))
+
+                num_target_pages = len(target_pages)
+                parent_dir = target_path.parent
+                parent_dir.mkdir(parents=True, exist_ok=True)
+                stem = source_path.stem
+
+                generated_files: List[Path] = []
+
+                for idx, page_num in enumerate(target_pages):
+                    if progress_cb:
+                        pct = int(10 + (idx / num_target_pages) * 75)
+                        progress_cb(pct, f"Rendering page {page_num + 1} of {total_pages}...")
+
+                    page = pdf_doc[page_num]
+                    pil_img = page.render(scale=scale, rotation=rotate).to_pil()
+
+                    # Handle color format compatibility
+                    if norm_fmt in ("jpg", "bmp"):
+                        if pil_img.mode in ("RGBA", "LA", "P"):
+                            bg = Image.new("RGB", pil_img.size, (255, 255, 255))
+                            if pil_img.mode == "RGBA":
+                                bg.paste(pil_img, mask=pil_img.split()[-1])
+                            else:
+                                bg.paste(pil_img.convert("RGB"))
+                            pil_img = bg
+                        elif pil_img.mode != "RGB":
+                            pil_img = pil_img.convert("RGB")
+                    elif norm_fmt == "png":
+                        if pil_img.mode not in ("RGB", "RGBA", "L"):
+                            pil_img = pil_img.convert("RGBA")
+
+                    if settings.get("grayscale"):
+                        pil_img = pil_img.convert("L")
+
+                    # Page output filename
+                    if num_target_pages == 1:
+                        if target_path.suffix.lower() == f".{norm_fmt}":
+                            page_path = target_path
+                        else:
+                            page_path = parent_dir / f"{stem}.{norm_fmt}"
+                    else:
+                        page_path = parent_dir / f"{stem}_page_{page_num + 1}.{norm_fmt}"
+
+                    save_kwargs: Dict[str, Any] = {}
+                    if norm_fmt in ("jpg", "jpeg"):
+                        save_kwargs["quality"] = quality
+                        save_kwargs["optimize"] = True
+                    elif norm_fmt == "webp":
+                        save_kwargs["quality"] = quality
+                        if settings.get("lossless"):
+                            save_kwargs["lossless"] = True
+
+                    pil_img.save(page_path, **save_kwargs)
+                    generated_files.append(page_path)
+
+                cls._set_last_output_files(generated_files)
+
+                # Single page: return that page file
+                if num_target_pages == 1:
+                    if progress_cb:
+                        progress_cb(100, f"Page rendered successfully to {norm_fmt.upper()}.")
+                    return generated_files[0]
+
+                # Multiple pages: generate a zip archive containing all pages
+                zip_path = parent_dir / f"{stem}_{norm_fmt}_pages.zip"
+                with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+                    for f in generated_files:
+                        zf.write(f, arcname=f.name)
+
+                if progress_cb:
+                    progress_cb(100, f"Successfully converted {num_target_pages} pages to {norm_fmt.upper()}.")
+
+                return zip_path
+
+            # 4. TXT / MD -> PDF (Document rendering)
             elif src_ext in ("txt", "md") and tgt_fmt == "pdf":
+                cls._set_last_output_files([target_path])
                 content = source_path.read_text(encoding="utf-8", errors="replace")
                 doc = SimpleDocTemplate(
                     str(target_path),
@@ -199,8 +342,9 @@ class PDFEngine(EngineCapability):
                     progress_cb(100, "PDF rendering complete.")
                 return target_path
 
-            # 4. Images -> PDF
+            # 5. Images -> PDF
             elif src_ext in ("png", "jpg", "jpeg", "webp", "bmp") and tgt_fmt == "pdf":
+                cls._set_last_output_files([target_path])
                 with Image.open(source_path) as im:
                     if im.mode != "RGB":
                         im = im.convert("RGB")

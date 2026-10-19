@@ -3,6 +3,7 @@
 import tempfile
 import json
 from pathlib import Path
+from PIL import Image
 import openpyxl
 import pypdf
 
@@ -50,6 +51,98 @@ def test_pdf_page_rotation_and_extraction():
         res_rotate = execute_conversion(planned_rotate)
         assert res_rotate.output_path.exists()
         assert validate_output_file(res_rotate.output_path, "pdf") is True
+
+
+def test_pdf_to_images_multi_page_extraction():
+    """Verify that multi-page PDF renders into individual images and ZIP package."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        # Create a sample 2-page PDF
+        orig_pdf = tmp / "document.pdf"
+        from reportlab.pdfgen import canvas
+        c = canvas.Canvas(str(orig_pdf))
+        c.drawString(100, 750, "Morphix Page 1")
+        c.showPage()
+        c.drawString(100, 750, "Morphix Page 2")
+        c.showPage()
+        c.save()
+
+        # 1. Convert PDF -> PNG (All pages)
+        planned_png = plan_conversion(
+            source_path=orig_pdf,
+            target_format="png",
+            raw_settings={"dpi": 150}
+        )
+        res_png = execute_conversion(planned_png)
+
+        # ZIP archive exists for multi-page output
+        assert res_png.output_path.exists()
+        assert res_png.output_path.suffix == ".zip"
+
+        # Output files list contains each individual page
+        assert len(res_png.output_files) == 2
+        for idx, page_file in enumerate(res_png.output_files):
+            assert page_file.exists()
+            assert page_file.suffix == ".png"
+            assert f"page_{idx + 1}" in page_file.name
+            with Image.open(page_file) as img:
+                assert img.width > 0
+                assert img.height > 0
+
+        # Validate output passes
+        assert validate_output_file(res_png.output_path, "png") is True
+
+
+def test_pdf_to_jpg_with_page_range():
+    """Verify converting a single selected page of PDF to JPG."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        orig_pdf = tmp / "document2.pdf"
+        from reportlab.pdfgen import canvas
+        c = canvas.Canvas(str(orig_pdf))
+        c.drawString(100, 750, "Page One")
+        c.showPage()
+        c.drawString(100, 750, "Page Two")
+        c.showPage()
+        c.save()
+
+        # Convert only page 2
+        planned_jpg = plan_conversion(
+            source_path=orig_pdf,
+            target_format="jpg",
+            raw_settings={"page_range": "2", "quality": 92}
+        )
+        res_jpg = execute_conversion(planned_jpg)
+
+        assert res_jpg.output_path.exists()
+        assert res_jpg.output_path.suffix == ".jpg"
+        assert len(res_jpg.output_files) == 1
+        with Image.open(res_jpg.output_path) as img:
+            assert img.format in ("JPEG", "MPO")
+            assert img.width > 0
+        with Image.open(res_jpg.output_path) as img:
+            assert img.format in ("JPEG", "MPO")
+            assert img.width > 0
+
+
+def test_pdf_to_txt_text_extraction():
+    """Verify that PDF -> TXT text extraction remains fully functional."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        sample_txt = tmp / "document3.txt"
+        sample_txt.write_text("Hello World from Morphix PDF Engine\n")
+        pdf_res = execute_conversion(plan_conversion(sample_txt, "pdf"))
+        orig_pdf = pdf_res.output_path
+
+        planned_txt = plan_conversion(
+            source_path=orig_pdf,
+            target_format="txt"
+        )
+        res_txt = execute_conversion(planned_txt)
+        assert res_txt.output_path.exists()
+        assert res_txt.output_path.suffix == ".txt"
+        content = res_txt.output_path.read_text(encoding="utf-8")
+        assert "Hello World" in content
 
 
 def test_spreadsheet_conversions():

@@ -251,15 +251,27 @@ class CapabilityRegistry:
             settings_schema=audio_settings
         ))
 
-        # 3. PDF Operations & Document-to-PDF (pypdf & reportlab)
+        # 3. PDF Operations & Document-to-PDF (pypdf, reportlab, pypdfium2)
         pdf_settings = {
             "page_range": SettingDefinition(
                 name="page_range", label="Page Range", type="str", default=None,
                 category="basic", description="Page range filter (e.g. '1-5, 8')"
             ),
+            "dpi": SettingDefinition(
+                name="dpi", label="Resolution (DPI)", type="select", default=150,
+                options=[72, 150, 200, 300], category="basic", description="Output rendering resolution in DPI"
+            ),
+            "quality": SettingDefinition(
+                name="quality", label="Image Quality", type="int", default=90, min_val=1, max_val=100, step=1,
+                category="basic", description="Output image quality (1-100) for JPG and WebP"
+            ),
             "rotate_pages": SettingDefinition(
                 name="rotate_pages", label="Rotate Pages", type="select", default=0,
                 options=[0, 90, 180, 270], category="advanced", description="Rotate pages clockwise"
+            ),
+            "grayscale": SettingDefinition(
+                name="grayscale", label="Grayscale", type="bool", default=False,
+                category="advanced", description="Convert rendered pages to black and white / grayscale"
             ),
             "title": SettingDefinition(
                 name="title", label="Document Title", type="str", default=None,
@@ -275,10 +287,10 @@ class CapabilityRegistry:
             id="pypdf_pdf_convert",
             engine_name="pdf",
             source_formats=["pdf", "txt", "md", "png", "jpg", "jpeg"],
-            target_formats=["pdf", "txt"],
-            lossiness="lossless",
+            target_formats=["png", "jpg", "jpeg", "webp", "txt", "pdf", "bmp", "tiff"],
+            lossiness="configurable",
             metadata_preservation="full",
-            potential_info_loss="Extracting PDF to TXT discards vector graphics, images, and formatting.",
+            potential_info_loss="Extracting PDF to TXT discards vector graphics and formatting. Converting PDF to images rasterizes vector layouts.",
             warnings=["Extracting plain text from scanned PDFs requires OCR."],
             validation_type="pdf",
             settings_schema=pdf_settings

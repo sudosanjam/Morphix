@@ -40,6 +40,7 @@ class JobItem(BaseModel):
     duration_seconds: Optional[float] = None
     source_size_bytes: Optional[int] = None
     output_size_bytes: Optional[int] = None
+    output_files: List[str] = Field(default_factory=list)
 
 
 class JobManager:
@@ -181,6 +182,7 @@ class JobManager:
                 job.source_size_bytes = result.source_size_bytes
                 job.output_size_bytes = result.output_size_bytes
                 job.target_path = str(result.output_path)
+                job.output_files = [str(f) for f in result.output_files]
 
         except JobCancelledError:
             with self._lock:

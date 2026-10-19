@@ -28,6 +28,17 @@ def test_registry_targets_for_png():
     assert "pdf" in target_fmts
 
 
+def test_registry_targets_for_pdf():
+    targets = registry.get_available_targets("pdf")
+    target_fmts = [t["format"] for t in targets]
+    # Retain txt option
+    assert "txt" in target_fmts
+    # Support image formats
+    assert "png" in target_fmts
+    assert "jpg" in target_fmts
+    assert "webp" in target_fmts
+
+
 def test_plan_image_conversion():
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)

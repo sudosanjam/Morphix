@@ -84,6 +84,15 @@ BUILTIN_PRESETS: List[Preset] = [
         is_builtin=True
     ),
     Preset(
+        id="pdf_to_images",
+        name="PDF to PNG Pages (150 DPI)",
+        description="Render all pages of a PDF document to crisp individual PNG images",
+        category="document",
+        target_format="png",
+        settings={"dpi": 150},
+        is_builtin=True
+    ),
+    Preset(
         id="spreadsheet_export",
         name="Standard CSV Export",
         description="Clean comma-separated values in UTF-8 encoding for cross-platform data interchange",
