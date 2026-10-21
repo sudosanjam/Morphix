@@ -98,6 +98,37 @@ def inspect_file(file_path: Path | str) -> Dict[str, Any]:
                 result["properties"] = PDFEngine.inspect_pdf(path)
             except Exception as e:
                 result["properties"]["error"] = f"Could not inspect PDF: {e}"
+        elif fmt == "docx":
+            try:
+                import docx
+                doc = docx.Document(path)
+                props = doc.core_properties
+                total_words = 0
+                total_chars = 0
+                for p in doc.paragraphs:
+                    t = p.text
+                    total_chars += len(t)
+                    total_words += len(t.split())
+                for table in doc.tables:
+                    for row in table.rows:
+                        for cell in row.cells:
+                            t = cell.text
+                            total_chars += len(t)
+                            total_words += len(t.split())
+
+                result["properties"] = {
+                    "title": props.title or path.stem,
+                    "author": props.author or "Unknown",
+                    "created": str(props.created) if props.created else None,
+                    "modified": str(props.modified) if props.modified else None,
+                    "paragraphs_count": len(doc.paragraphs),
+                    "tables_count": len(doc.tables),
+                    "word_count": total_words,
+                    "char_count": total_chars,
+                    "sections_count": len(doc.sections)
+                }
+            except Exception as e:
+                result["properties"] = {"warning": f"Could not inspect Word document: {e}"}
         elif fmt in ("txt", "md", "html"):
             try:
                 content = path.read_text(encoding="utf-8", errors="replace")

@@ -191,3 +191,89 @@ def test_structured_data_conversions():
         assert res_back.output_path.exists()
         parsed = json.loads(res_back.output_path.read_text())
         assert parsed["project"] == "Morphix"
+
+
+def test_word_to_pdf_txt_md_html_conversions():
+    """Verify DOCX conversion to PDF, TXT, MD, and HTML."""
+    import docx
+    from app.core.metadata import inspect_file
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        doc_path = tmp / "sample_report.docx"
+        d = docx.Document()
+        d.core_properties.title = "Sample Security Report"
+        d.core_properties.author = "Morphix Test"
+        d.add_heading("Project Report", 0)
+        p = d.add_paragraph("This is a paragraph with ")
+        p.add_run("bold formatting").bold = True
+        p.add_run(" and normal text.")
+        d.add_paragraph("Feature item 1", style="List Bullet")
+        d.add_paragraph("Feature item 2", style="List Bullet")
+
+        tbl = d.add_table(rows=2, cols=2)
+        tbl.cell(0, 0).text = "Column 1"
+        tbl.cell(0, 1).text = "Column 2"
+        tbl.cell(1, 0).text = "Data 1"
+        tbl.cell(1, 1).text = "Data 2"
+        d.save(doc_path)
+
+        # 0. Metadata inspection
+        meta = inspect_file(doc_path)
+        assert meta["format"] == "docx"
+        assert meta["properties"]["paragraphs_count"] >= 4
+        assert meta["properties"]["tables_count"] == 1
+        assert "word_count" in meta["properties"]
+        assert meta["properties"]["author"] == "Morphix Test"
+
+        # 1. DOCX -> PDF
+        planned_pdf = plan_conversion(source_path=doc_path, target_format="pdf")
+        res_pdf = execute_conversion(planned_pdf)
+        assert res_pdf.output_path.exists()
+        assert validate_output_file(res_pdf.output_path, "pdf") is True
+
+        # 2. DOCX -> TXT
+        planned_txt = plan_conversion(source_path=doc_path, target_format="txt")
+        res_txt = execute_conversion(planned_txt)
+        assert res_txt.output_path.exists()
+        txt_body = res_txt.output_path.read_text(encoding="utf-8")
+        assert "Project Report" in txt_body
+        assert "bold formatting" in txt_body
+        assert "Feature item 1" in txt_body
+        assert "Data 1" in txt_body
+
+        # 3. DOCX -> MD
+        planned_md = plan_conversion(source_path=doc_path, target_format="md")
+        res_md = execute_conversion(planned_md)
+        assert res_md.output_path.exists()
+        md_body = res_md.output_path.read_text(encoding="utf-8")
+        assert "# Project Report" in md_body
+        assert "**bold formatting**" in md_body
+        assert "Column 1" in md_body
+
+        # 4. DOCX -> HTML
+        planned_html = plan_conversion(source_path=doc_path, target_format="html")
+        res_html = execute_conversion(planned_html)
+        assert res_html.output_path.exists()
+        html_body = res_html.output_path.read_text(encoding="utf-8")
+        assert "<title>Sample Security Report</title>" in html_body or "Project Report" in html_body
+        assert "<strong>bold formatting</strong>" in html_body
+        assert "<table" in html_body
+
+
+def test_markdown_and_txt_to_docx_conversion():
+    """Verify reverse conversions to DOCX."""
+    import docx
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        md_file = tmp / "notes.md"
+        md_file.write_text("# Meeting Notes\n\nKey discussion points:\n\n- Point A\n- Point B\n\n| Item | Status |\n| --- | --- |\n| Task 1 | Done |\n", encoding="utf-8")
+
+        planned_docx = plan_conversion(source_path=md_file, target_format="docx")
+        res_docx = execute_conversion(planned_docx)
+        assert res_docx.output_path.exists()
+        assert validate_output_file(res_docx.output_path, "docx") is True
+
+        doc = docx.Document(res_docx.output_path)
+        assert any("Meeting Notes" in p.text for p in doc.paragraphs)
+        assert len(doc.tables) >= 1
+

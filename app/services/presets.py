@@ -93,6 +93,24 @@ BUILTIN_PRESETS: List[Preset] = [
         is_builtin=True
     ),
     Preset(
+        id="word_to_pdf",
+        name="Word Document to PDF",
+        description="Convert Word documents (.docx/.doc) into pristine print-ready PDF",
+        category="document",
+        target_format="pdf",
+        settings={},
+        is_builtin=True
+    ),
+    Preset(
+        id="word_to_markdown",
+        name="Word Document to Markdown",
+        description="Export Word document headings, styles, and tables to formatted Markdown",
+        category="document",
+        target_format="md",
+        settings={},
+        is_builtin=True
+    ),
+    Preset(
         id="spreadsheet_export",
         name="Standard CSV Export",
         description="Clean comma-separated values in UTF-8 encoding for cross-platform data interchange",

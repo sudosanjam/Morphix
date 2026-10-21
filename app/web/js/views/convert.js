@@ -366,11 +366,26 @@ function renderSettingsPanel() {
     }
   }
 
+  let metaDetails = "";
+  if (item.metadata && item.metadata.properties) {
+    const props = item.metadata.properties;
+    const parts = [];
+    if (props.word_count) parts.push(`${props.word_count.toLocaleString()} words`);
+    if (props.paragraphs_count) parts.push(`${props.paragraphs_count} paragraphs`);
+    if (props.tables_count) parts.push(`${props.tables_count} tables`);
+    if (props.page_count) parts.push(`${props.page_count} pages`);
+    if (props.author && props.author !== "Unknown") parts.push(`by ${props.author}`);
+    if (parts.length > 0) {
+      metaDetails = `<div style="font-size: 11px; color: var(--color-primary); margin-top: 4px; font-weight: 500;">${parts.join(" · ")}</div>`;
+    }
+  }
+
   let html = `
     <div style="display: flex; flex-direction: column; gap: var(--space-4);">
       <div>
         <div style="font-weight: 600; font-size: var(--font-size-sm);">${item.name}</div>
         <div style="font-size: var(--font-size-xs); color: var(--text-muted);">${formatBytes(item.size)} · ${item.family.toUpperCase()}</div>
+        ${metaDetails}
       </div>
   `;
 
@@ -459,7 +474,7 @@ function renderSettingsPanel() {
     `;
   }
 
-  if (item.format === "pdf" && ["png", "jpg", "jpeg", "webp", "bmp", "tiff"].includes(targetFmt)) {
+  if (["pdf", "docx", "doc"].includes(item.format) && ["png", "jpg", "jpeg", "webp", "bmp", "tiff"].includes(targetFmt)) {
     const dpiVal = item.settings.dpi || 150;
     html += `
       <div class="form-group">

@@ -14,6 +14,7 @@ from app.engines.pdf import PDFEngine
 from app.engines.spreadsheets import SpreadsheetEngine
 from app.engines.structured_data import StructuredDataEngine
 from app.engines.documents import DocumentEngine, PandocEngine, LibreOfficeEngine
+from app.engines.word import WordEngine
 from app.engines.archives import ArchiveEngine
 from app.core.detector import canonical_format, FORMAT_FAMILIES
 
@@ -59,6 +60,7 @@ ENGINE_MAP: Dict[str, Type[EngineCapability]] = {
     "openpyxl": SpreadsheetEngine,
     "structured_data": StructuredDataEngine,
     "documents": DocumentEngine,
+    "word": WordEngine,
     "pandoc": PandocEngine,
     "libreoffice": LibreOfficeEngine,
     "archives": ArchiveEngine,
@@ -90,6 +92,7 @@ FORMAT_METADATA: Dict[str, Dict[str, Any]] = {
     "html": {"name": "HTML Document", "family": "document", "mime": "text/html", "ext": ".html"},
     "txt": {"name": "Plain Text", "family": "document", "mime": "text/plain", "ext": ".txt"},
     "docx": {"name": "Microsoft Word Document", "family": "document", "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "ext": ".docx"},
+    "doc": {"name": "Legacy Word Document", "family": "document", "mime": "application/msword", "ext": ".doc"},
     "odt": {"name": "OpenDocument Text", "family": "document", "mime": "application/vnd.oasis.opendocument.text", "ext": ".odt"},
     "epub": {"name": "EPUB E-Book", "family": "ebook", "mime": "application/epub+zip", "ext": ".epub"},
     # Spreadsheets
@@ -377,6 +380,65 @@ class CapabilityRegistry:
             warnings=[],
             validation_type="basic",
             settings_schema=doc_settings
+        ))
+
+        # 6.5 Microsoft Word Document Operations (WordEngine)
+        word_settings = {
+            "title": SettingDefinition(
+                name="title", label="Document Title", type="str", default=None,
+                category="basic", description="Document title metadata"
+            ),
+            "author": SettingDefinition(
+                name="author", label="Author", type="str", default=None,
+                category="basic", description="Document author metadata"
+            ),
+            "page_range": SettingDefinition(
+                name="page_range", label="Page Range Filter", type="str", default=None,
+                category="basic", description="Page range filter for image rendering (e.g. '1-3, 5')"
+            ),
+            "dpi": SettingDefinition(
+                name="dpi", label="Image Resolution (DPI)", type="select", default=150,
+                options=[72, 150, 200, 300], category="basic", description="Rendering resolution in DPI when converting to images"
+            ),
+            "quality": SettingDefinition(
+                name="quality", label="Image Quality", type="int", default=90, min_val=1, max_val=100, step=1,
+                category="basic", description="Output image quality (1-100) for JPG and WebP"
+            ),
+        }
+
+        self.routes.append(ConversionRoute(
+            id="word_document_convert",
+            engine_name="word",
+            source_formats=["docx", "doc"],
+            target_formats=["pdf", "txt", "md", "html", "png", "jpg", "jpeg", "webp", "bmp", "tiff"],
+            lossiness="configurable",
+            metadata_preservation="full",
+            potential_info_loss="Converting DOCX to plain text discards layouts, tables, and styling. Converting to PDF preserves visual fidelity.",
+            warnings=[],
+            validation_type="basic",
+            settings_schema=word_settings
+        ))
+
+        self.routes.append(ConversionRoute(
+            id="doc_to_word_convert",
+            engine_name="word",
+            source_formats=["md", "txt", "html", "pdf"],
+            target_formats=["docx"],
+            lossiness="configurable",
+            metadata_preservation="partial",
+            potential_info_loss="Converting to DOCX creates structured paragraphs and headings.",
+            warnings=[],
+            validation_type="basic",
+            settings_schema={
+                "title": SettingDefinition(
+                    name="title", label="Document Title", type="str", default=None,
+                    category="basic", description="Title metadata for output Word document"
+                ),
+                "author": SettingDefinition(
+                    name="author", label="Author", type="str", default=None,
+                    category="basic", description="Author metadata for output Word document"
+                ),
+            }
         ))
 
         # 7. Pandoc Adapter (Optional)

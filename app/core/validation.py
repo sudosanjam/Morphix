@@ -72,6 +72,15 @@ def validate_output_file(
         except Exception as e:
             raise ValidationError(f"Generated PDF failed validation: {str(e)}")
 
+    elif fmt == "docx":
+        import zipfile
+        try:
+            with zipfile.ZipFile(output_path, "r") as zf:
+                if "word/document.xml" not in zf.namelist():
+                    raise ValidationError("Generated DOCX file is missing document.xml payload.")
+        except Exception as e:
+            raise ValidationError(f"Generated DOCX failed validation: {str(e)}")
+
     elif fmt in ("json", "yaml", "yml", "xml") or validation_type == "data":
         try:
             if fmt == "json":

@@ -31,13 +31,13 @@ function renderDocumentsView(container) {
           <span style="width: 28px; height: 28px; color: var(--color-primary);">${ICONS.document}</span>
           <div>
             <strong id="doc-active-name" style="font-size: var(--font-size-sm);">No document loaded</strong>
-            <div id="doc-active-sub" style="font-size: var(--font-size-xs); color: var(--text-muted);">Supports PDF, Markdown, TXT, XLSX, CSV</div>
+            <div id="doc-active-sub" style="font-size: var(--font-size-xs); color: var(--text-muted);">Supports Word (DOCX/DOC), PDF, Markdown, TXT, XLSX, CSV</div>
           </div>
         </div>
         <button id="doc-btn-upload" class="btn btn-primary btn-sm">
           <span style="width: 14px; height: 14px;">${ICONS.plus}</span> Load Document
         </button>
-        <input type="file" id="doc-file-input" accept=".pdf,.md,.txt,.html,.xlsx,.csv,.tsv" style="display: none;" />
+        <input type="file" id="doc-file-input" accept=".docx,.doc,.pdf,.md,.txt,.html,.xlsx,.csv,.tsv" style="display: none;" />
       </div>
 
       <!-- Processing Form Card -->
@@ -204,6 +204,66 @@ function renderDynamicDocFields(format) {
       }
     });
 
+  } else if (["docx", "doc"].includes(fmt)) {
+    fields.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <div class="form-group">
+          <label class="form-label">Action / Target Format</label>
+          <select id="doc-action-sel" class="input-select">
+            <option value="pdf" selected>Convert to PDF Document (.pdf)</option>
+            <option value="txt">Extract Plain Text (.txt)</option>
+            <option value="md">Convert to Markdown (.md)</option>
+            <option value="html">Convert to HTML Webpage (.html)</option>
+            <option value="png">Render Pages to PNG Images (.png)</option>
+            <option value="jpg">Render Pages to JPEG Images (.jpg)</option>
+            <option value="webp">Render Pages to WebP Images (.webp)</option>
+          </select>
+        </div>
+
+        <!-- Image-specific options (DPI & Quality) -->
+        <div id="word-image-options" style="display: none; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+          <div class="form-group">
+            <label class="form-label">Resolution (DPI)</label>
+            <select id="pdf-dpi-sel" class="input-select">
+              <option value="72">72 DPI (Standard Web / Fast)</option>
+              <option value="150" selected>150 DPI (Crisp / Recommended)</option>
+              <option value="200">200 DPI (High Clarity)</option>
+              <option value="300">300 DPI (Ultra / Print Quality)</option>
+            </select>
+          </div>
+          <div class="form-group" id="word-quality-group">
+            <label class="form-label">
+              <span>Image Quality</span>
+              <span id="word-quality-val" style="font-family: var(--font-family-mono); font-size: 11px;">90%</span>
+            </label>
+            <div class="slider-wrapper">
+              <input type="range" id="pdf-quality-slider" class="range-slider" min="1" max="100" value="90" />
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const actionSel = document.getElementById("doc-action-sel");
+    const imageOpts = document.getElementById("word-image-options");
+    const qualitySlider = document.getElementById("pdf-quality-slider");
+    const qualityVal = document.getElementById("word-quality-val");
+
+    if (qualitySlider && qualityVal) {
+      qualitySlider.addEventListener("input", (e) => {
+        qualityVal.textContent = `${e.target.value}%`;
+      });
+    }
+
+    actionSel.addEventListener("change", (e) => {
+      const val = e.target.value;
+      if (["png", "jpg", "jpeg", "webp"].includes(val)) {
+        imageOpts.style.display = "grid";
+      } else {
+        imageOpts.style.display = "none";
+      }
+    });
+
   } else if (["md", "markdown", "txt"].includes(fmt)) {
     fields.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: var(--space-3);">
@@ -211,6 +271,7 @@ function renderDynamicDocFields(format) {
           <label class="form-label">Target Format</label>
           <select id="doc-action-sel" class="input-select">
             <option value="pdf" selected>Render to Formatted PDF Document (.pdf)</option>
+            <option value="docx">Convert to Word Document (.docx)</option>
             <option value="html">Render to Clean HTML Webpage (.html)</option>
             <option value="txt">Export Plain Text (.txt)</option>
           </select>
