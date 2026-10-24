@@ -134,3 +134,85 @@ def test_serve_index_html():
     assert res.status_code == 200
     assert "Morphix" in res.text
     assert "<!DOCTYPE html>" in res.text
+    assert "morphix_retro_logo.png" in res.text
+
+
+def test_api_image_to_pdf_and_assets():
+    # 1. Test retro logo assets are served
+    res_logo = client.get("/assets/morphix_retro_logo.png")
+    assert res_logo.status_code == 200
+    assert len(res_logo.content) > 0
+
+    res_fav = client.get("/assets/favicon.png")
+    assert res_fav.status_code == 200
+
+    # 2. Upload image and convert to PDF
+    buf = io.BytesIO()
+    img = Image.new("RGB", (64, 64), (100, 200, 50))
+    img.save(buf, "PNG")
+    buf.seek(0)
+
+    upload_res = client.post(
+        "/api/upload",
+        files={"file": ("page.png", buf, "image/png")}
+    )
+    assert upload_res.status_code == 200
+    uploaded_path = upload_res.json()["path"]
+
+    convert_res = client.post(
+        "/api/convert",
+        json={
+            "source_path": uploaded_path,
+            "target_format": "pdf",
+            "settings": {"dpi": 150}
+        }
+    )
+    assert convert_res.status_code == 200
+    job_id = convert_res.json()["id"]
+
+    import time
+    for _ in range(30):
+        time.sleep(0.1)
+        j = client.get(f"/api/jobs/{job_id}").json()
+        if j["status"] == "completed":
+            break
+
+    assert j["status"] == "completed"
+    assert j["target_path"].endswith(".pdf")
+
+
+def test_api_multi_image_to_pdf():
+    # Create two in-memory images
+    buf1 = io.BytesIO()
+    Image.new("RGB", (50, 50), (255, 0, 0)).save(buf1, "PNG")
+    buf1.seek(0)
+
+    buf2 = io.BytesIO()
+    Image.new("RGB", (50, 50), (0, 0, 255)).save(buf2, "JPEG")
+    buf2.seek(0)
+
+    up1 = client.post("/api/upload", files={"file": ("im1.png", buf1, "image/png")}).json()
+    up2 = client.post("/api/upload", files={"file": ("im2.jpg", buf2, "image/jpeg")}).json()
+
+    # Call /api/pdf/from-images
+    merge_res = client.post(
+        "/api/pdf/from-images",
+        json={
+            "image_paths": [up1["path"], up2["path"]],
+            "title": "api_test_combined",
+            "settings": {"dpi": 100}
+        }
+    )
+    assert merge_res.status_code == 200
+    job_id = merge_res.json()["id"]
+
+    import time
+    for _ in range(30):
+        time.sleep(0.1)
+        j = client.get(f"/api/jobs/{job_id}").json()
+        if j["status"] == "completed":
+            break
+
+    assert j["status"] == "completed"
+    assert j["target_path"].endswith(".pdf")
+

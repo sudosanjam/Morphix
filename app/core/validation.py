@@ -44,7 +44,15 @@ def validate_output_file(
         except Exception as e:
             raise ValidationError(f"Generated ZIP archive is invalid: {str(e)}")
 
-    if fmt in ("png", "jpg", "jpeg", "webp", "gif", "bmp", "tiff", "ico") or validation_type == "image":
+    if fmt == "pdf":
+        try:
+            reader = pypdf.PdfReader(str(output_path))
+            if len(reader.pages) == 0:
+                raise ValidationError("Generated PDF contains 0 pages.")
+        except Exception as e:
+            raise ValidationError(f"Generated PDF failed validation: {str(e)}")
+
+    elif fmt in ("png", "jpg", "jpeg", "webp", "gif", "bmp", "tiff", "ico") or validation_type == "image":
         try:
             with Image.open(output_path) as img:
                 img.verify()
@@ -63,14 +71,6 @@ def validate_output_file(
             dur = info.get("duration_seconds")
             if dur is not None and dur <= 0:
                 raise ValidationError("Generated audio file has 0 duration.")
-
-    elif fmt == "pdf":
-        try:
-            reader = pypdf.PdfReader(str(output_path))
-            if len(reader.pages) == 0:
-                raise ValidationError("Generated PDF contains 0 pages.")
-        except Exception as e:
-            raise ValidationError(f"Generated PDF failed validation: {str(e)}")
 
     elif fmt == "docx":
         import zipfile

@@ -175,13 +175,17 @@ class CapabilityRegistry:
                 name="strip_metadata", label="Strip EXIF / Metadata", type="bool", default=False,
                 category="advanced", description="Remove embedded metadata for privacy and size reduction"
             ),
+            "dpi": SettingDefinition(
+                name="dpi", label="Resolution (DPI)", type="select", default=150,
+                options=[72, 96, 150, 200, 300], category="advanced", description="Resolution in DPI for PDF output"
+            ),
         }
 
         self.routes.append(ConversionRoute(
             id="pillow_image_convert",
             engine_name="pillow",
             source_formats=["png", "jpg", "jpeg", "webp", "gif", "bmp", "tiff", "ico"],
-            target_formats=["png", "jpg", "webp", "gif", "bmp", "tiff", "ico"],
+            target_formats=["png", "jpg", "webp", "gif", "bmp", "tiff", "ico", "pdf"],
             lossiness="configurable",
             metadata_preservation="full",
             potential_info_loss="Converting transparency to JPEG flattens alpha to solid background.",
@@ -289,7 +293,7 @@ class CapabilityRegistry:
         self.routes.append(ConversionRoute(
             id="pypdf_pdf_convert",
             engine_name="pdf",
-            source_formats=["pdf", "txt", "md", "png", "jpg", "jpeg"],
+            source_formats=["pdf", "txt", "md", "png", "jpg", "jpeg", "webp", "bmp", "tiff", "tif", "gif", "ico"],
             target_formats=["png", "jpg", "jpeg", "webp", "txt", "pdf", "bmp", "tiff"],
             lossiness="configurable",
             metadata_preservation="full",

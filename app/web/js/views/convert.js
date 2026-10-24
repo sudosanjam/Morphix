@@ -71,8 +71,12 @@ function renderConvertView(container) {
             </table>
           </div>
 
-          <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-3);">
-            <button id="btn-start-convert" class="btn btn-primary btn-lg" style="min-width: 180px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); margin-top: var(--space-3);">
+            <button id="btn-merge-images-pdf" class="btn btn-secondary btn-lg" style="display: none;">
+              <span style="width: 18px; height: 18px;">${ICONS.document}</span>
+              <span id="btn-merge-images-label">Combine Images to PDF</span>
+            </button>
+            <button id="btn-start-convert" class="btn btn-primary btn-lg" style="min-width: 180px; margin-left: auto;">
               <span style="width: 20px; height: 20px;">${ICONS.play || ICONS.convert}</span>
               Convert Files
             </button>
@@ -105,9 +109,47 @@ function setupListeners(container) {
   const addMoreBtn = container.querySelector("#btn-add-more");
   const clearBtn = container.querySelector("#btn-clear-queue");
   const startBtn = container.querySelector("#btn-start-convert");
+  const mergePdfBtn = container.querySelector("#btn-merge-images-pdf");
 
   browseBtn.addEventListener("click", () => fileInput.click());
   if (addMoreBtn) addMoreBtn.addEventListener("click", () => fileInput.click());
+
+  if (mergePdfBtn) {
+    mergePdfBtn.addEventListener("click", async () => {
+      const imageItems = state.queue.filter(i => 
+        i.family === "image" || ["png", "jpg", "jpeg", "webp", "bmp", "tiff", "ico", "gif"].includes(i.format)
+      );
+      if (imageItems.length < 2) {
+        showToast("Select at least 2 images to combine into a PDF", "warning");
+        return;
+      }
+      showToast(`Combining ${imageItems.length} images into a single PDF...`, "info", 3000);
+      try {
+        const imagePaths = imageItems.map(i => i.path);
+        const firstStem = imageItems[0].name.split(".")[0];
+        const job = await api.imagesToPdf(imagePaths, { title: `${firstStem}_merged` });
+
+        for (let i = 0; i < 40; i++) {
+          await new Promise(r => setTimeout(r, 600));
+          const status = await api.getJob(job.id);
+          if (status.status === "completed") {
+            showToast(`Successfully combined ${imageItems.length} images into PDF!`, "success", 4000);
+            const a = document.createElement("a");
+            a.href = `/api/jobs/${status.id}/download`;
+            a.download = `${firstStem}_merged.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            break;
+          } else if (status.status === "failed") {
+            throw new Error(status.error_message || "Merge failed");
+          }
+        }
+      } catch (err) {
+        showToast(`PDF merge failed: ${err.message}`, "error");
+      }
+    });
+  }
 
   fileInput.addEventListener("change", (e) => {
     if (e.target.files.length > 0) {
@@ -201,6 +243,22 @@ function renderQueue() {
   dropzone.style.display = "none";
   queueContainer.style.display = "flex";
   badge.textContent = `${state.queue.length} file${state.queue.length > 1 ? "s" : ""}`;
+
+  // Check if multiple images exist in queue to toggle "Combine Images to PDF" button
+  const mergeBtn = document.getElementById("btn-merge-images-pdf");
+  const mergeLabel = document.getElementById("btn-merge-images-label");
+  const imageCount = state.queue.filter(i => 
+    i.family === "image" || ["png", "jpg", "jpeg", "webp", "bmp", "tiff", "ico", "gif"].includes(i.format)
+  ).length;
+
+  if (mergeBtn) {
+    if (imageCount >= 2) {
+      mergeBtn.style.display = "inline-flex";
+      if (mergeLabel) mergeLabel.textContent = `Combine ${imageCount} Images to PDF`;
+    } else {
+      mergeBtn.style.display = "none";
+    }
+  }
 
   tbody.innerHTML = "";
 

@@ -26,10 +26,14 @@ function renderImagesView(container) {
           </p>
         </div>
         <div style="display: flex; gap: var(--space-2);">
+          <button id="img-btn-multi-pdf" class="btn btn-primary btn-sm" title="Combine multiple image files into a single multi-page PDF">
+            <span style="width: 14px; height: 14px;">${ICONS.document || ICONS.convert}</span> Combine Images to PDF
+          </button>
           <button id="img-btn-upload" class="btn btn-secondary btn-sm">
             <span style="width: 14px; height: 14px;">${ICONS.plus}</span> Open Image
           </button>
           <input type="file" id="img-file-input" accept="image/*" style="display: none;" />
+          <input type="file" id="img-multi-pdf-input" accept="image/*" multiple style="display: none;" />
         </div>
       </div>
 
@@ -62,9 +66,21 @@ function renderImagesView(container) {
               <option value="webp" selected>WebP (Modern & Compact)</option>
               <option value="png">PNG (Lossless High Fidelity)</option>
               <option value="jpg">JPEG (Photo Standard)</option>
+              <option value="pdf">PDF (Portable Document Format)</option>
               <option value="bmp">BMP (Uncompressed Bitmap)</option>
               <option value="tiff">TIFF (Print Standard)</option>
               <option value="ico">ICO (Windows Icon)</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="img-dpi-group" style="display: none;">
+            <label class="form-label">PDF Resolution (DPI)</label>
+            <select id="img-dpi-sel" class="input-select">
+              <option value="72">72 DPI (Standard Web / Fast)</option>
+              <option value="96">96 DPI (Screen)</option>
+              <option value="150" selected>150 DPI (Crisp / Standard)</option>
+              <option value="200">200 DPI (High Clarity)</option>
+              <option value="300">300 DPI (Print Quality)</option>
             </select>
           </div>
 
@@ -147,6 +163,26 @@ function setupListeners(container) {
   const qualitySlider = container.querySelector("#img-quality-slider");
   const qualityVal = container.querySelector("#img-quality-val");
 
+  const multiPdfBtn = container.querySelector("#img-btn-multi-pdf");
+  const multiPdfInput = container.querySelector("#img-multi-pdf-input");
+  const targetFmtSel = container.querySelector("#img-target-fmt");
+  const dpiGroup = container.querySelector("#img-dpi-group");
+
+  if (targetFmtSel && dpiGroup) {
+    targetFmtSel.addEventListener("change", (e) => {
+      dpiGroup.style.display = e.target.value === "pdf" ? "flex" : "none";
+    });
+  }
+
+  if (multiPdfBtn && multiPdfInput) {
+    multiPdfBtn.addEventListener("click", () => multiPdfInput.click());
+    multiPdfInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) {
+        handleMultiImagePdf(Array.from(e.target.files));
+      }
+    });
+  }
+
   uploadBtn.addEventListener("click", () => fileInput.click());
   fileInput.addEventListener("change", (e) => {
     if (e.target.files.length > 0) {
@@ -227,6 +263,11 @@ async function processImage() {
     strip_metadata: stripMeta
   };
 
+  if (targetFmt === "pdf") {
+    const dpiVal = document.getElementById("img-dpi-sel");
+    if (dpiVal) settings.dpi = Number(dpiVal.value);
+  }
+
   if (widthVal) settings.width = Number(widthVal);
   if (heightVal) settings.height = Number(heightVal);
 
@@ -273,5 +314,50 @@ async function processImage() {
   } finally {
     processBtn.disabled = false;
     processBtn.innerHTML = `<span style="width: 16px; height: 16px;">${ICONS.play || ICONS.convert}</span> Process & Save Image`;
+  }
+}
+
+async function handleMultiImagePdf(files) {
+  if (!files || files.length === 0) return;
+  showToast(`Uploading ${files.length} images to merge into PDF...`, "info", 3000);
+
+  try {
+    const paths = [];
+    for (const file of files) {
+      const uploadRes = await api.uploadFile(file);
+      paths.push(uploadRes.path);
+    }
+
+    showToast(`Assembling multi-page PDF from ${paths.length} images...`, "info", 3000);
+    const job = await api.imagesToPdf(paths, {
+      title: `${files[0].name.split('.')[0]}_combined`
+    });
+
+    // Poll until complete
+    let finishedJob = null;
+    for (let i = 0; i < 40; i++) {
+      await new Promise(r => setTimeout(r, 600));
+      const status = await api.getJob(job.id);
+      if (status.status === "completed") {
+        finishedJob = status;
+        break;
+      } else if (status.status === "failed") {
+        throw new Error(status.error_message || "Conversion failed");
+      }
+    }
+
+    if (finishedJob) {
+      showToast(`Successfully created multi-page PDF from ${files.length} images!`, "success", 4000);
+      const downloadUrl = `/api/jobs/${finishedJob.id}/download`;
+      // Trigger instant download
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `${files[0].name.split('.')[0]}_combined.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  } catch (err) {
+    showToast(`Failed to combine images to PDF: ${err.message}`, "error", 4000);
   }
 }

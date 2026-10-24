@@ -40,6 +40,19 @@
   color: var(--color-primary);
 }
 
+.brand-retro-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.brand-badge:hover .brand-retro-logo {
+  transform: scale(1.08) rotate(-2deg);
+}
+
 .brand-title {
   font-size: var(--font-size-md);
   font-weight: 700;

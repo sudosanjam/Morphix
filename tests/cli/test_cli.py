@@ -88,3 +88,39 @@ def test_cli_presets():
     assert res.exit_code == 0
     p_list = json.loads(res.stdout)
     assert len(p_list) >= 8
+
+
+def test_cli_convert_image_to_pdf():
+    import pypdf
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        src = tmp / "slide.png"
+        Image.new("RGB", (80, 80), (12, 100, 200)).save(src, "PNG")
+
+        res = runner.invoke(app, ["convert", str(src), "--to", "pdf", "--json"])
+        assert res.exit_code == 0
+        data = json.loads(res.stdout)
+        assert data["status"] == "success"
+        out_p = Path(data["output_path"])
+        assert out_p.exists()
+        assert out_p.suffix.lower() == ".pdf"
+        assert len(pypdf.PdfReader(str(out_p)).pages) == 1
+
+
+def test_cli_images_to_pdf():
+    import pypdf
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir)
+        im1 = tmp / "page1.png"
+        im2 = tmp / "page2.jpg"
+        out_pdf = tmp / "combined.pdf"
+
+        Image.new("RGB", (40, 40), (255, 0, 0)).save(im1, "PNG")
+        Image.new("RGB", (40, 40), (0, 255, 0)).save(im2, "JPEG")
+
+        res = runner.invoke(app, ["images-to-pdf", str(im1), str(im2), "-o", str(out_pdf)])
+        assert res.exit_code == 0
+        assert out_pdf.exists()
+        reader = pypdf.PdfReader(str(out_pdf))
+        assert len(reader.pages) == 2
+

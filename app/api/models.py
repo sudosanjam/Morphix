@@ -16,6 +16,13 @@ class BatchConvertRequest(BaseModel):
     items: List[ConvertRequest]
 
 
+class ImagesToPdfRequest(BaseModel):
+    image_paths: List[str]
+    output_destination: Optional[str] = None
+    settings: Dict[str, Any] = Field(default_factory=dict)
+    title: Optional[str] = "combined_images"
+
+
 class CancelJobResponse(BaseModel):
     job_id: str
     cancelled: bool

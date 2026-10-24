@@ -51,6 +51,17 @@ export const api = {
     body: JSON.stringify({ items })
   }),
 
+  imagesToPdf: (imagePaths, options = {}) => request("/api/pdf/from-images", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      image_paths: imagePaths,
+      output_destination: options.output_destination,
+      settings: options.settings || {},
+      title: options.title || "combined_images"
+    })
+  }),
+
   getJobs: () => request("/api/jobs"),
   getJob: (jobId) => request(`/api/jobs/${jobId}`),
   getJobFiles: (jobId) => request(`/api/jobs/${jobId}/files`),

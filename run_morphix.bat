@@ -14,8 +14,8 @@ if not exist ".venv\Scripts\python.exe" (
 
 if "%~1"=="" (
     echo Starting Morphix Web GUI at http://127.0.0.1:7474
-    echo Press Ctrl+C to stop the server.
-    ".venv\Scripts\python.exe" -m app.cli.main serve
+    echo Minimizing server window to system tray...
+    start "" /min ".venv\Scripts\python.exe" -m app.cli.main serve --tray
 ) else (
     ".venv\Scripts\python.exe" -m app.cli.main %*
 )

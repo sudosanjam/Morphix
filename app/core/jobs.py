@@ -96,6 +96,69 @@ class JobManager:
 
         return job
 
+    def submit_multi_image_pdf_job(
+        self,
+        image_paths: List[str | Path],
+        output_destination: Optional[str | Path] = None,
+        settings: Optional[Dict[str, Any]] = None,
+        title: Optional[str] = "combined_images"
+    ) -> JobItem:
+        """Create and queue a multi-image to PDF merge job."""
+        job_id = str(uuid.uuid4())
+        resolved_paths = [Path(p).resolve() for p in image_paths]
+
+        # Determine output path
+        base_name = f"{title or 'combined_images'}.pdf"
+        if output_destination:
+            dest_p = Path(output_destination).resolve()
+            if dest_p.is_dir() or str(output_destination).endswith(("\\", "/")):
+                target_file = dest_p / base_name
+            else:
+                target_file = dest_p
+        elif config.settings.default_output_dir:
+            dest_p = Path(config.settings.default_output_dir).resolve()
+            dest_p.mkdir(parents=True, exist_ok=True)
+            target_file = dest_p / base_name
+        else:
+            target_file = resolved_paths[0].parent / base_name
+
+        # Prevent overwrite by safe rename if file exists
+        if target_file.exists():
+            counter = 1
+            stem = target_file.stem
+            while target_file.exists():
+                target_file = target_file.parent / f"{stem}_{counter}.pdf"
+                counter += 1
+
+        total_bytes = sum(p.stat().st_size for p in resolved_paths if p.exists())
+
+        job = JobItem(
+            id=job_id,
+            source_path=str(resolved_paths[0]),
+            target_format="pdf",
+            target_path=str(target_file),
+            settings=settings or {},
+            status=JobState.PENDING,
+            progress=0,
+            progress_message="Pending multi-image conversion...",
+            engine="pdf",
+            source_size_bytes=total_bytes
+        )
+
+        with self._lock:
+            self._jobs[job_id] = job
+            self._cancel_flags[job_id] = False
+
+        self.executor.submit(
+            self._run_multi_image_pdf_job,
+            job_id,
+            resolved_paths,
+            target_file,
+            settings or {}
+        )
+
+        return job
+
     def cancel_job(self, job_id: str) -> bool:
         """Cancel a pending or running job."""
         with self._lock:
@@ -193,6 +256,89 @@ class JobManager:
                 job.status = JobState.FAILED
                 job.error_message = str(e)
                 job.progress_message = f"Failed: {str(e)}"
+        finally:
+            for cb in self._on_job_completed_callbacks:
+                try:
+                    cb(job)
+                except Exception:
+                    pass
+
+    def _run_multi_image_pdf_job(
+        self,
+        job_id: str,
+        image_paths: List[Path],
+        target_path: Path,
+        settings: Dict[str, Any]
+    ):
+        job = self._jobs[job_id]
+        start_time = time.time()
+
+        def is_cancelled() -> bool:
+            return self._cancel_flags.get(job_id, False)
+
+        def update_progress(pct: int, msg: str):
+            with self._lock:
+                job.progress = pct
+                job.progress_message = msg
+                if pct < 10:
+                    job.status = JobState.PREPARING
+                elif pct >= 95:
+                    job.status = JobState.VALIDATING
+                else:
+                    job.status = JobState.RUNNING
+
+        try:
+            if is_cancelled():
+                raise JobCancelledError(job_id)
+
+            update_progress(10, f"Converting {len(image_paths)} images to PDF...")
+            from app.engines.pdf import PDFEngine
+            from app.core.validation import validate_output_file
+
+            result_path = PDFEngine.convert_images_to_pdf(
+                image_paths=image_paths,
+                output_path=target_path,
+                settings=settings,
+                progress_cb=update_progress
+            )
+
+            if is_cancelled():
+                raise JobCancelledError(job_id)
+
+            update_progress(95, "Validating PDF...")
+            validate_output_file(result_path, expected_format="pdf", validation_type="pdf")
+
+            duration = time.time() - start_time
+            out_size = result_path.stat().st_size
+
+            with self._lock:
+                job.status = JobState.COMPLETED
+                job.progress = 100
+                job.progress_message = "Completed"
+                job.duration_seconds = round(duration, 3)
+                job.output_size_bytes = out_size
+                job.target_path = str(result_path)
+                job.output_files = [str(result_path)]
+
+        except JobCancelledError:
+            with self._lock:
+                job.status = JobState.CANCELLED
+                job.progress_message = "Cancelled"
+            if target_path.exists():
+                try:
+                    target_path.unlink()
+                except Exception:
+                    pass
+        except Exception as e:
+            with self._lock:
+                job.status = JobState.FAILED
+                job.error_message = str(e)
+                job.progress_message = f"Failed: {str(e)}"
+            if target_path.exists():
+                try:
+                    target_path.unlink()
+                except Exception:
+                    pass
         finally:
             for cb in self._on_job_completed_callbacks:
                 try:

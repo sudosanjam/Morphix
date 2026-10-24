@@ -16,7 +16,7 @@ from app.core.jobs import jobs, JobState
 from app.services.history import history
 from app.services.presets import presets
 from app.services.diagnostics import run_diagnostics
-from app.api.models import ConvertRequest, BatchConvertRequest, SettingsUpdateRequest
+from app.api.models import ConvertRequest, BatchConvertRequest, ImagesToPdfRequest, SettingsUpdateRequest
 
 router = APIRouter()
 
@@ -148,6 +148,56 @@ def submit_batch_convert_jobs(req: BatchConvertRequest):
             )
             submitted.append(job.model_dump())
     return {"submitted_count": len(submitted), "jobs": submitted}
+
+
+@router.post("/pdf/from-images")
+def convert_images_to_pdf_endpoint(req: ImagesToPdfRequest):
+    """Combine multiple image files into a single PDF document."""
+    paths = [Path(p).resolve() for p in req.image_paths]
+    if not paths:
+        raise HTTPException(status_code=400, detail="No image paths provided.")
+    for p in paths:
+        if not p.exists():
+            raise HTTPException(status_code=404, detail=f"Image file not found: {p}")
+
+    job = jobs.submit_multi_image_pdf_job(
+        image_paths=paths,
+        output_destination=req.output_destination,
+        settings=req.settings,
+        title=req.title or "combined_images"
+    )
+    return job.model_dump()
+
+
+@router.post("/pdf/upload-images")
+async def upload_and_convert_images_to_pdf_endpoint(
+    files: List[UploadFile] = File(...),
+    dpi: int = Form(150),
+    grayscale: bool = Form(False),
+    title: str = Form("combined_images")
+):
+    """Directly upload multiple image files and merge them into a single PDF."""
+    if not files:
+        raise HTTPException(status_code=400, detail="No files uploaded.")
+
+    temp_dir = config.temp_dir / "uploads"
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    saved_paths = []
+    import uuid
+    for file in files:
+        safe_name = f"{uuid.uuid4().hex[:8]}_{Path(file.filename or 'image.png').name}"
+        target = temp_dir / safe_name
+        with open(target, "wb") as f:
+            while chunk := await file.read(1024 * 1024):
+                f.write(chunk)
+        saved_paths.append(target)
+
+    job = jobs.submit_multi_image_pdf_job(
+        image_paths=saved_paths,
+        settings={"dpi": dpi, "grayscale": grayscale},
+        title=title
+    )
+    return job.model_dump()
 
 
 @router.get("/jobs")

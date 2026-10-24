@@ -14,7 +14,7 @@ class ImageEngine(EngineCapability):
     display_name = "Pillow Image Processor"
 
     SUPPORTED_INPUTS = ["png", "jpg", "jpeg", "webp", "gif", "bmp", "tiff", "tif", "ico"]
-    SUPPORTED_OUTPUTS = ["png", "jpg", "jpeg", "webp", "gif", "bmp", "tiff", "ico"]
+    SUPPORTED_OUTPUTS = ["png", "jpg", "jpeg", "webp", "gif", "bmp", "tiff", "ico", "pdf"]
 
     @classmethod
     def is_available(cls) -> bool:
@@ -151,7 +151,7 @@ class ImageEngine(EngineCapability):
                 except Exception:
                     bg_rgb = (255, 255, 255)
 
-                if fmt in ("jpg", "bmp") or flatten_transparency:
+                if fmt in ("jpg", "bmp", "pdf") or flatten_transparency:
                     if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
                         alpha_img = img.convert("RGBA")
                         bg_img = Image.new("RGB", alpha_img.size, bg_rgb)
@@ -197,6 +197,10 @@ class ImageEngine(EngineCapability):
                     # ICO requires specific size constraints
                     if img.size[0] > 256 or img.size[1] > 256:
                         img = img.resize((256, 256), resample=Image.Resampling.LANCZOS)
+                elif fmt == "pdf":
+                    pil_fmt = "PDF"
+                    dpi = float(settings.get("dpi", 100.0))
+                    save_kwargs["resolution"] = dpi
                 else:
                     pil_fmt = fmt.upper()
 

@@ -1,18 +1,24 @@
+<p align="center">
+  <img src="app/web/assets/morphix_retro_logo.png" alt="Morphix Logo" width="140" />
+</p>
+
 # Morphix — Universal Offline File Conversion Suite
 
 > **High-performance, privacy-first cross-platform file conversion, optimization, and document processing utility.**  
-> 100% offline local processing · Zero network telemetry · Desktop-grade Web GUI & CLI · Windows 10/11 & Linux
+> 100% offline local processing · Zero network telemetry · Dark Blue Abyss Web GUI & CLI · Windows 10/11 & Linux
 
 ---
 
 ## 1. Overview
 
-**Morphix** is a purpose-built desktop and command-line utility for converting, optimizing, and transforming media and documents without cloud dependencies or third-party web uploads. Built with a shared modular conversion core in Python 3, a local FastAPI/Uvicorn server, and a high-density, responsive vanilla HTML5/CSS/JavaScript interface, Morphix handles single-file quick conversions as well as high-throughput batch operations.
+**Morphix** is a purpose-built desktop and command-line utility for converting, optimizing, and transforming media and documents without cloud dependencies or third-party web uploads. Built with a shared modular conversion core in Python 3, a local FastAPI/Uvicorn server, and a high-density, responsive vanilla HTML5/CSS/JavaScript interface (Dark Blue Abyss aesthetic), Morphix handles single-file quick conversions as well as high-throughput batch operations.
 
 ### Key Capabilities
 - **Strictly Offline & Private:** Operates 100% locally on your machine. No accounts, API keys, tracking, or network calls.
 - **Unified Core:** Both the local web GUI and the `morphix` CLI share the identical capability registry, conversion planner, and validation pipeline.
 - **Multi-Format Processing:** Raster images, high-fidelity audio, documents, spreadsheets, presentations, and structured data.
+- **Image-to-PDF & Batch Compilation:** Convert individual images or merge multiple images directly into unified multi-page PDFs with configurable DPI (`72` to `300`).
+- **Windows System Tray Integration:** Clean desktop presence with background console minimization and system notification tray controls.
 - **Deep Format Settings:** Exposes granular audio bitrate, EBU R128 LUFS loudness normalization, true-peak limiting, image dimensions, resampling filters, WebP lossless mode, PDF page ranges/rotation, and spreadsheet delimiters.
 - **Pre-Flight Validation:** All generated outputs are deeply validated by format decoders and checked for non-empty sizes before reporting success.
 - **Safe by Default:** Originals are never overwritten by default; collisions are automatically renamed (`_1`, `_2`), and partial outputs from failed jobs are cleaned up immediately.
@@ -23,9 +29,9 @@
 
 | Family | Input Formats | Target Formats | Engine | Status | Lossiness |
 |---|---|---|---|---|---|
-| **Images** | `PNG`, `JPG`, `WebP`, `GIF`, `BMP`, `TIFF`, `ICO` | `PNG`, `JPG`, `WebP`, `GIF`, `BMP`, `TIFF`, `ICO` | Pillow | Built-in | Configurable (Quality 1–100, Lossless WebP) |
+| **Images** | `PNG`, `JPG`, `WebP`, `GIF`, `BMP`, `TIFF`, `ICO` | `PNG`, `JPG`, `WebP`, `GIF`, `BMP`, `TIFF`, `ICO`, `PDF` | Pillow & pypdf | Built-in | Configurable (Quality 1–100, Lossless WebP, DPI) |
 | **Audio** | `MP3`, `WAV`, `FLAC`, `AAC`, `M4A`, `OGG`, `Opus`, `AIFF`, `AC3` | `MP3`, `WAV`, `FLAC`, `AAC`, `M4A`, `OGG`, `Opus`, `AIFF`, `AC3` | FFmpeg | Built-in / Bundled | Configurable (Bitrate 64k–320k, Sample Rate, Channels, LUFS) |
-| **PDF Tools** | `PDF`, `TXT`, `MD`, `PNG`, `JPG` | `PDF`, `TXT` | pypdf & ReportLab | Built-in | Lossless / Extraction |
+| **PDF Tools** | `PDF`, `TXT`, `MD`, `PNG`, `JPG`, `WebP`, `BMP`, `TIFF` | `PDF`, `TXT`, `JPG`, `PNG`, `WebP` | pypdf & ReportLab & pypdfium2 | Built-in | Lossless / Extraction / Multi-image merge |
 | **Documents** | `MD`, `HTML`, `TXT` | `HTML`, `TXT`, `MD`, `PDF` | Python Markdown & Platypus | Built-in | Configurable |
 | **Office Docs** | `DOCX`, `DOC`, `ODT`, `PPTX`, `PPT`, `ODP` | `PDF`, `TXT` | LibreOffice / Pandoc | Optional Adapters | Lossless PDF Export |
 | **Spreadsheets** | `XLSX`, `CSV`, `TSV` | `XLSX`, `CSV`, `TSV`, `JSON` | openpyxl & csv | Built-in | Configurable (Delimiters, Quotes, Sheets) |

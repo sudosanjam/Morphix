@@ -9,7 +9,7 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
-from PIL import Image
+from PIL import Image, ImageOps
 
 try:
     import pypdfium2 as pdfium
@@ -24,7 +24,7 @@ class PDFEngine(EngineCapability):
     name = "pdf"
     display_name = "Morphix PDF Engine"
 
-    SUPPORTED_INPUTS = ["pdf", "txt", "md", "png", "jpg", "jpeg"]
+    SUPPORTED_INPUTS = ["pdf", "txt", "md", "png", "jpg", "jpeg", "webp", "bmp", "tiff", "tif", "gif", "ico"]
     SUPPORTED_OUTPUTS = ["pdf", "txt", "png", "jpg", "jpeg", "webp", "bmp", "tiff"]
 
     _tls = threading.local()
@@ -343,12 +343,24 @@ class PDFEngine(EngineCapability):
                 return target_path
 
             # 5. Images -> PDF
-            elif src_ext in ("png", "jpg", "jpeg", "webp", "bmp") and tgt_fmt == "pdf":
+            elif src_ext in ("png", "jpg", "jpeg", "webp", "bmp", "tiff", "tif", "gif", "ico") and tgt_fmt == "pdf":
                 cls._set_last_output_files([target_path])
                 with Image.open(source_path) as im:
-                    if im.mode != "RGB":
+                    try:
+                        im = ImageOps.exif_transpose(im)
+                    except Exception:
+                        pass
+                    if settings.get("grayscale"):
+                        im = im.convert("L")
+                    elif im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info):
+                        alpha_img = im.convert("RGBA")
+                        bg_img = Image.new("RGB", alpha_img.size, (255, 255, 255))
+                        bg_img.paste(alpha_img, mask=alpha_img.split()[3])
+                        im = bg_img
+                    elif im.mode != "RGB":
                         im = im.convert("RGB")
-                    im.save(target_path, "PDF", resolution=100.0)
+                    dpi = float(settings.get("dpi", 100.0))
+                    im.save(target_path, "PDF", resolution=dpi)
                 if progress_cb:
                     progress_cb(100, "Image converted to PDF.")
                 return target_path
@@ -380,3 +392,74 @@ class PDFEngine(EngineCapability):
         if progress_cb:
             progress_cb(100, "PDF merge complete.")
         return output_path
+
+    @classmethod
+    def convert_images_to_pdf(
+        cls,
+        image_paths: List[Path],
+        output_path: Path,
+        settings: Optional[Dict[str, Any]] = None,
+        progress_cb=None
+    ) -> Path:
+        """Convert and merge multiple image files into a single multi-page PDF document."""
+        if not image_paths:
+            raise ConversionFailedError("No image files provided for PDF conversion.")
+
+        settings = settings or {}
+        dpi = float(settings.get("dpi", 150.0))
+        grayscale = bool(settings.get("grayscale", False))
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        opened_images = []
+        try:
+            total = len(image_paths)
+            for idx, img_path in enumerate(image_paths):
+                if progress_cb:
+                    progress_cb(int(10 + (idx / total) * 75), f"Processing image {idx + 1} of {total}: {img_path.name}...")
+
+                im = Image.open(img_path)
+                try:
+                    im = ImageOps.exif_transpose(im)
+                except Exception:
+                    pass
+
+                if grayscale:
+                    im = im.convert("L")
+                elif im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info):
+                    alpha_img = im.convert("RGBA")
+                    bg_img = Image.new("RGB", alpha_img.size, (255, 255, 255))
+                    bg_img.paste(alpha_img, mask=alpha_img.split()[3])
+                    im = bg_img
+                elif im.mode != "RGB":
+                    im = im.convert("RGB")
+
+                opened_images.append(im)
+
+            if progress_cb:
+                progress_cb(90, "Assembling multi-page PDF document...")
+
+            first_img = opened_images[0]
+            rest_imgs = opened_images[1:]
+            first_img.save(
+                output_path,
+                "PDF",
+                resolution=dpi,
+                save_all=True,
+                append_images=rest_imgs
+            )
+
+            cls._set_last_output_files([output_path])
+            if progress_cb:
+                progress_cb(100, f"Successfully merged {len(image_paths)} images into PDF.")
+            return output_path
+
+        except Exception as e:
+            if isinstance(e, ConversionFailedError):
+                raise
+            raise ConversionFailedError(f"Multi-image PDF conversion failed: {str(e)}")
+        finally:
+            for im in opened_images:
+                try:
+                    im.close()
+                except Exception:
+                    pass

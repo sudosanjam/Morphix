@@ -249,6 +249,48 @@ def inspect_cmd(
     console.print(table)
 
 
+@app.command("images-to-pdf")
+def images_to_pdf_cmd(
+    images: List[Path] = typer.Argument(..., help="Image files to convert and merge into a PDF"),
+    output: Path = typer.Option(..., "--output", "-o", help="Target output PDF file path"),
+    dpi: int = typer.Option(150, "--dpi", help="PDF resolution in DPI (72, 96, 150, 200, 300)"),
+    grayscale: bool = typer.Option(False, "--grayscale", "-g", help="Convert images to grayscale"),
+):
+    """Convert and merge multiple image files into a single PDF document."""
+    from app.engines.pdf import PDFEngine
+    from app.core.validation import validate_output_file
+
+    for img_p in images:
+        if not img_p.exists():
+            err_console.print(f"[red]Error:[/red] File not found: {img_p}")
+            raise typer.Exit(code=1)
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TimeElapsedColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task(f"[bold cyan]Converting {len(images)} images to PDF...[/bold cyan]", total=100)
+
+        def progress_cb(pct: int, msg: str):
+            progress.update(task, completed=pct, description=f"[bold cyan]{msg}[/bold cyan]")
+
+        try:
+            res_path = PDFEngine.convert_images_to_pdf(
+                image_paths=images,
+                output_path=output,
+                settings={"dpi": dpi, "grayscale": grayscale},
+                progress_cb=progress_cb
+            )
+            validate_output_file(res_path, expected_format="pdf", validation_type="pdf")
+            console.print(f"[bold green]✓[/bold green] Created PDF: [cyan]{res_path}[/cyan] ({format_bytes(res_path.stat().st_size)})")
+        except Exception as e:
+            err_console.print(f"[red]Conversion failed:[/red] {str(e)}")
+            raise typer.Exit(code=1)
+
+
 @app.command("formats")
 def formats_cmd(
     input_file: Optional[Path] = typer.Option(None, "--input", "-i", help="Inspect available destinations for a file"),
@@ -391,13 +433,26 @@ def serve_cmd(
     host: str = typer.Option("127.0.0.1", "--host", help="Bind host"),
     port: int = typer.Option(7474, "--port", "-p", help="Port number"),
     open_browser: bool = typer.Option(True, "--open-browser/--no-open-browser", help="Open browser on launch"),
+    tray: bool = typer.Option(True, "--tray/--no-tray", help="Minimize server to system tray on launch"),
 ):
     """Launch the local offline web GUI server."""
     import uvicorn
     import webbrowser
 
     console.print(f"[bold cyan]{APP_NAME}[/bold cyan] Web GUI starting at [bold green]http://{host}:{port}[/bold green]...")
-    console.print("[dim]Press Ctrl+C to stop the server.[/dim]")
+    if tray and sys.platform == "win32":
+        console.print("[dim]Server window is minimizing to system tray...[/dim]")
+    else:
+        console.print("[dim]Press Ctrl+C to stop the server.[/dim]")
+
+    tray_service = None
+    if tray and sys.platform == "win32":
+        try:
+            from app.services.tray import SystemTrayService
+            tray_service = SystemTrayService(host=host, port=port)
+            tray_service.start(minimize_console=True)
+        except Exception:
+            tray_service = None
 
     if open_browser:
         def _open():
@@ -410,8 +465,12 @@ def serve_cmd(
         import threading
         threading.Thread(target=_open, daemon=True).start()
 
-    from app.main import app as fastapi_app
-    uvicorn.run(fastapi_app, host=host, port=port, log_level="warning")
+    try:
+        from app.main import app as fastapi_app
+        uvicorn.run(fastapi_app, host=host, port=port, log_level="warning")
+    finally:
+        if tray_service:
+            tray_service.stop()
 
 
 if __name__ == "__main__":

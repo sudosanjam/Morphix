@@ -31,13 +31,13 @@ function renderDocumentsView(container) {
           <span style="width: 28px; height: 28px; color: var(--color-primary);">${ICONS.document}</span>
           <div>
             <strong id="doc-active-name" style="font-size: var(--font-size-sm);">No document loaded</strong>
-            <div id="doc-active-sub" style="font-size: var(--font-size-xs); color: var(--text-muted);">Supports Word (DOCX/DOC), PDF, Markdown, TXT, XLSX, CSV</div>
+            <div id="doc-active-sub" style="font-size: var(--font-size-xs); color: var(--text-muted);">Supports Word (DOCX/DOC), PDF, Images to PDF, Markdown, TXT, XLSX, CSV</div>
           </div>
         </div>
         <button id="doc-btn-upload" class="btn btn-primary btn-sm">
           <span style="width: 14px; height: 14px;">${ICONS.plus}</span> Load Document
         </button>
-        <input type="file" id="doc-file-input" accept=".docx,.doc,.pdf,.md,.txt,.html,.xlsx,.csv,.tsv" style="display: none;" />
+        <input type="file" id="doc-file-input" accept=".docx,.doc,.pdf,.md,.txt,.html,.xlsx,.csv,.tsv,.png,.jpg,.jpeg,.webp,.bmp,.tiff" style="display: none;" />
       </div>
 
       <!-- Processing Form Card -->
@@ -305,6 +305,36 @@ function renderDynamicDocFields(format) {
         </div>
       </div>
     `;
+  } else if (["png", "jpg", "jpeg", "webp", "bmp", "tiff", "ico", "gif"].includes(fmt)) {
+    fields.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <div class="form-group">
+          <label class="form-label">Action / Target Format</label>
+          <select id="doc-action-sel" class="input-select">
+            <option value="pdf" selected>Convert Image to PDF Document (.pdf)</option>
+          </select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+          <div class="form-group">
+            <label class="form-label">Resolution (DPI)</label>
+            <select id="pdf-dpi-sel" class="input-select">
+              <option value="72">72 DPI (Standard Web / Fast)</option>
+              <option value="96">96 DPI (Screen)</option>
+              <option value="150" selected>150 DPI (Crisp / Recommended)</option>
+              <option value="200">200 DPI (High Clarity)</option>
+              <option value="300">300 DPI (Ultra / Print Quality)</option>
+            </select>
+          </div>
+          <div class="form-group" style="display: flex; flex-direction: column;">
+            <label class="form-label">Grayscale</label>
+            <label class="switch" style="margin-top: 4px;">
+              <input type="checkbox" id="img-doc-grayscale" />
+              <span class="switch-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    `;
   } else {
     fields.innerHTML = `
       <div class="form-group">
@@ -347,6 +377,11 @@ async function executeDocOperation() {
   const delimSelect = document.getElementById("sheet-delimiter");
   if (delimSelect) {
     settings.delimiter = delimSelect.value;
+  }
+
+  const grayToggle = document.getElementById("img-doc-grayscale");
+  if (grayToggle) {
+    settings.grayscale = grayToggle.checked;
   }
 
   execBtn.disabled = true;

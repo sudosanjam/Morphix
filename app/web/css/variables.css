@@ -1,10 +1,10 @@
-/* Morphix Design Tokens and Color System */
+/* Morphix Design Tokens and Color System - Dark Blue Abyss Theme */
 :root {
-  /* Brand Palette - Electric Indigo & Violet */
-  --color-primary: #6366f1;
-  --color-primary-hover: #4f46e5;
-  --color-primary-light: rgba(99, 102, 241, 0.15);
-  --color-primary-glow: rgba(99, 102, 241, 0.35);
+  /* Brand Palette - Dark Blue Abyss (Electric Azure & Deep Ocean) */
+  --color-primary: #0284c7;
+  --color-primary-hover: #0369a1;
+  --color-primary-light: rgba(2, 132, 199, 0.15);
+  --color-primary-glow: rgba(2, 132, 199, 0.35);
 
   --color-success: #10b981;
   --color-success-bg: rgba(16, 185, 129, 0.15);
@@ -12,7 +12,7 @@
   --color-warning-bg: rgba(245, 158, 11, 0.15);
   --color-danger: #ef4444;
   --color-danger-bg: rgba(239, 68, 68, 0.15);
-  --color-info: #06b6d4;
+  --color-info: #38bdf8;
 
   /* Typography scale */
   --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -46,46 +46,46 @@
   --transition-normal: 0.25s ease;
 }
 
-/* Dark Theme (Default) */
+/* Dark Blue Abyss Theme (Default) */
 [data-theme="dark"], :root {
-  --bg-app: #090d16;
-  --bg-surface: #101622;
-  --bg-surface-elevated: #161e2e;
-  --bg-surface-hover: #1e283d;
-  --bg-surface-active: #25324c;
-  --bg-input: #0c121d;
+  --bg-app: #030712;
+  --bg-surface: #081021;
+  --bg-surface-elevated: #0d192f;
+  --bg-surface-hover: #132442;
+  --bg-surface-active: #193056;
+  --bg-input: #050c19;
 
-  --border-subtle: #1e2738;
-  --border-normal: #2a364d;
-  --border-focus: #6366f1;
+  --border-subtle: #11223e;
+  --border-normal: #19345d;
+  --border-focus: #0284c7;
 
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-inverse: #090d16;
+  --text-primary: #f0f6fc;
+  --text-secondary: #90a4cb;
+  --text-muted: #57709a;
+  --text-inverse: #030712;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
-  --shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.8), 0 10px 10px -5px rgba(0, 0, 0, 0.6);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 3, 10, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 3, 10, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
+  --shadow-modal: 0 20px 25px -5px rgba(0, 2, 8, 0.85), 0 10px 10px -5px rgba(0, 0, 0, 0.7);
 }
 
 /* Light Theme */
 [data-theme="light"] {
-  --bg-app: #f8fafc;
+  --bg-app: #f0f4f9;
   --bg-surface: #ffffff;
-  --bg-surface-elevated: #f1f5f9;
-  --bg-surface-hover: #e2e8f0;
-  --bg-surface-active: #cbd5e1;
+  --bg-surface-elevated: #e6eef8;
+  --bg-surface-hover: #dbe7f5;
+  --bg-surface-active: #cadcf0;
   --bg-input: #ffffff;
 
-  --border-subtle: #e2e8f0;
-  --border-normal: #cbd5e1;
-  --border-focus: #6366f1;
+  --border-subtle: #dbe4f0;
+  --border-normal: #c5d4e8;
+  --border-focus: #0284c7;
 
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-primary: #0a1728;
+  --text-secondary: #3b506d;
+  --text-muted: #728aa8;
   --text-inverse: #ffffff;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);

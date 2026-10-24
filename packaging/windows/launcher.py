@@ -14,7 +14,7 @@ def main():
     else:
         # Default desktop action: launch server and open GUI in browser
         from app.cli.main import serve_cmd
-        serve_cmd(host="127.0.0.1", port=7474, open_browser=True)
+        serve_cmd(host="127.0.0.1", port=7474, open_browser=True, tray=True)
 
 if __name__ == "__main__":
     main()
