@@ -10,6 +10,9 @@ class AppState {
     this.selectedQueueItemId = null;
     this.activeJobs = [];
     this.theme = localStorage.getItem("morphix_theme") || "dark";
+    this.palette = localStorage.getItem("morphix_palette") || "obsidian";
+    this.sidebarCollapsed = localStorage.getItem("morphix_sidebar_collapsed") === "true";
+    this.hyperspace = localStorage.getItem("morphix_hyperspace") !== "false";
     this.settings = {};
     this.listeners = new Map();
   }
@@ -41,6 +44,28 @@ class AppState {
 
   toggleTheme() {
     this.setTheme(this.theme === "dark" ? "light" : "dark");
+  }
+
+  setPalette(palette) {
+    this.palette = palette;
+    localStorage.setItem("morphix_palette", palette);
+    document.documentElement.setAttribute("data-palette", palette);
+    this.emit("paletteChange", palette);
+  }
+
+  toggleSidebar() {
+    this.sidebarCollapsed = !this.sidebarCollapsed;
+    localStorage.setItem("morphix_sidebar_collapsed", this.sidebarCollapsed ? "true" : "false");
+    const sidebar = document.getElementById("sidebar");
+    if (sidebar) {
+      if (this.sidebarCollapsed) {
+        sidebar.classList.add("collapsed");
+      } else {
+        sidebar.classList.remove("collapsed");
+      }
+    }
+    this.emit("sidebarChange", this.sidebarCollapsed);
+    return this.sidebarCollapsed;
   }
 
   addToQueue(item) {

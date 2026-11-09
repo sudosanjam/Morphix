@@ -1,5 +1,5 @@
 /**
- * Dedicated Audio Tools Workspace.
+ * Dedicated Audio Tools Workspace - Apple Pro Sound Studio Experience.
  */
 
 import { api } from "../api.js";
@@ -11,23 +11,30 @@ export function initAudioView() {
   const container = document.getElementById("view-audio");
   if (!container) return;
 
+  window.morphixAudioDrop = (files) => {
+    if (files.length > 0) {
+      loadAudioFile(files[0]);
+    }
+  };
+
   renderAudioView(container);
   setupListeners(container);
 }
 
 function renderAudioView(container) {
   container.innerHTML = `
-    <div style="display: flex; flex-direction: column; gap: var(--space-4); max-width: 900px; margin: 0 auto; width: 100%;">
+    <div style="display: flex; flex-direction: column; gap: var(--space-4); max-width: 940px; margin: 0 auto; width: 100%;">
+      <!-- Header -->
       <div style="display: flex; align-items: center; justify-content: space-between;">
         <div>
-          <h2>Audio Encoding & Loudness Processing</h2>
-          <p style="font-size: var(--font-size-xs); color: var(--text-muted);">
-            FFmpeg-powered broadcast loudness normalization (LUFS), codec resampling, bitrate tuning, and trimming
+          <h2>Audio Studio & Loudness Normalization</h2>
+          <p style="font-size: var(--font-size-xs); color: var(--text-muted); margin-top: 2px;">
+            FFmpeg-powered broadcast loudness engineering (EBU R128 LUFS), codec transcoding, and true-peak limiting
           </p>
         </div>
         <div>
           <button id="aud-btn-upload" class="btn btn-primary btn-sm">
-            <span style="width: 14px; height: 14px;">${ICONS.plus}</span> Open Audio File
+            <span style="width: 13px; height: 13px;">${ICONS.plus}</span> Open Audio File
           </button>
           <input type="file" id="aud-file-input" accept="audio/*" style="display: none;" />
         </div>
@@ -35,8 +42,11 @@ function renderAudioView(container) {
 
       <!-- Audio Inspection Stats Card -->
       <div class="card" id="aud-stats-card">
-        <div class="card-header">
-          <h3 class="card-title">Stream Inspection</h3>
+        <div class="card-header" style="margin-bottom: var(--space-2-5);">
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            <span style="width: 15px; height: 15px; color: var(--color-mocha);">${ICONS.audio}</span>
+            <h3 class="card-title">Stream Inspection</h3>
+          </div>
           <span id="aud-stat-badge" class="badge badge-neutral">No file loaded</span>
         </div>
         <div class="card-body">
@@ -68,13 +78,17 @@ function renderAudioView(container) {
       <!-- Audio Configuration Settings Card -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Encoding & Filters</h3>
-          <div style="display: flex; gap: var(--space-2);">
-            <button class="btn btn-secondary btn-sm aud-preset-btn" data-preset="podcast">Podcast Preset</button>
-            <button class="btn btn-secondary btn-sm aud-preset-btn" data-preset="voice">Voice Preset</button>
-            <button class="btn btn-secondary btn-sm aud-preset-btn" data-preset="lossless">Lossless Preset</button>
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            <span style="width: 15px; height: 15px; color: var(--color-mocha);">${ICONS.sliders}</span>
+            <h3 class="card-title">Mastering & Encoding Options</h3>
+          </div>
+          <div style="display: flex; gap: var(--space-1-5);">
+            <button class="btn btn-secondary btn-xs aud-preset-btn" data-preset="podcast">Podcast Standard (-16 LUFS)</button>
+            <button class="btn btn-secondary btn-xs aud-preset-btn" data-preset="voice">Voice Note (Opus)</button>
+            <button class="btn btn-secondary btn-xs aud-preset-btn" data-preset="lossless">FLAC Lossless</button>
           </div>
         </div>
+
         <div class="card-body" style="display: flex; flex-direction: column; gap: var(--space-4);">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
             <div class="form-group">
@@ -82,11 +96,11 @@ function renderAudioView(container) {
               <select id="aud-target-fmt" class="input-select">
                 <option value="mp3" selected>MP3 (MPEG Audio Layer III)</option>
                 <option value="wav">WAV (Uncompressed PCM)</option>
-                <option value="flac">FLAC (Lossless Audio)</option>
+                <option value="flac">FLAC (Lossless High Fidelity)</option>
                 <option value="aac">AAC (Advanced Audio Coding)</option>
                 <option value="ogg">OGG (Vorbis Audio)</option>
-                <option value="opus">Opus (Interactive Speech & Music)</option>
-                <option value="aiff">AIFF (Apple Audio)</option>
+                <option value="opus">Opus (Speech & Realtime Streaming)</option>
+                <option value="aiff">AIFF (Apple Audio Format)</option>
               </select>
             </div>
 
@@ -98,7 +112,7 @@ function renderAudioView(container) {
                 <option value="128k">128 kbps (Standard Speech)</option>
                 <option value="192k" selected>192 kbps (Standard Music)</option>
                 <option value="256k">256 kbps (High Quality)</option>
-                <option value="320k">320 kbps (Maximum MP3 Fidelity)</option>
+                <option value="320k">320 kbps (Maximum Fidelity)</option>
               </select>
             </div>
           </div>
@@ -107,31 +121,31 @@ function renderAudioView(container) {
             <div class="form-group">
               <label class="form-label">Sample Rate</label>
               <select id="aud-rate-sel" class="input-select">
-                <option value="">Keep Original</option>
+                <option value="">Keep Source Sample Rate</option>
                 <option value="22050">22,050 Hz</option>
-                <option value="44100" selected>44,100 Hz (CD Standard)</option>
-                <option value="48000">48,000 Hz (Video / Studio Standard)</option>
+                <option value="44100" selected>44,100 Hz (CD Audio Standard)</option>
+                <option value="48000">48,000 Hz (Studio / Broadcast)</option>
                 <option value="96000">96,000 Hz (Hi-Res Audio)</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Channels</label>
+              <label class="form-label">Channel Layout</label>
               <select id="aud-channels-sel" class="input-select">
-                <option value="preserve" selected>Preserve Original</option>
+                <option value="preserve" selected>Preserve Original Channels</option>
                 <option value="stereo">Stereo (2 Channels)</option>
-                <option value="mono">Mono (1 Channel)</option>
+                <option value="mono">Mono Downmix (1 Channel)</option>
               </select>
             </div>
           </div>
 
-          <!-- Loudness Normalization -->
-          <div style="padding: var(--space-4); background: var(--bg-surface-elevated); border-radius: var(--radius-md); display: flex; flex-direction: column; gap: var(--space-3);">
+          <!-- Broadcast Loudness Normalization (LUFS) -->
+          <div style="padding: var(--space-4); background: var(--bg-surface-elevated); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); display: flex; flex-direction: column; gap: var(--space-3);">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div>
-                <strong style="font-size: var(--font-size-sm);">EBU R128 Loudness Normalization (LUFS)</strong>
-                <p style="font-size: var(--font-size-xs); color: var(--text-muted);">
-                  Normalizes integrated loudness to target broadcast standard with true-peak limiting
+                <strong style="font-size: var(--font-size-sm); color: var(--text-primary);">EBU R128 Loudness Normalization</strong>
+                <p style="font-size: var(--font-size-xs); color: var(--text-muted); margin-top: 2px;">
+                  Automatic two-pass integrated loudness matching with -1 dBTP true-peak ceiling
                 </p>
               </div>
               <label class="switch">
@@ -139,18 +153,19 @@ function renderAudioView(container) {
                 <span class="switch-slider"></span>
               </label>
             </div>
-            <div id="aud-lufs-controls" style="display: none; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+
+            <div id="aud-lufs-controls" style="display: none; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-top: var(--space-2);">
               <div class="form-group">
                 <label class="form-label">
                   <span>Target Integrated LUFS</span>
-                  <span class="slider-val" id="aud-lufs-val">-16.0 LUFS</span>
+                  <span class="slider-val" id="aud-lufs-val" style="color: var(--color-mocha);">-16.0 LUFS</span>
                 </label>
                 <input type="range" id="aud-lufs-slider" class="range-slider" min="-24.0" max="-12.0" step="0.5" value="-16.0" />
               </div>
               <div class="form-group">
                 <label class="form-label">
                   <span>True Peak Ceiling (dBTP)</span>
-                  <span class="slider-val" id="aud-peak-val">-1.0 dBTP</span>
+                  <span class="slider-val" id="aud-peak-val" style="color: var(--color-mocha);">-1.0 dBTP</span>
                 </label>
                 <input type="range" id="aud-peak-slider" class="range-slider" min="-3.0" max="0.0" step="0.5" value="-1.0" />
               </div>
@@ -158,19 +173,23 @@ function renderAudioView(container) {
           </div>
 
           <div style="display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-2);">
-            <button id="aud-btn-convert" class="btn btn-primary btn-lg" disabled>
-              <span style="width: 18px; height: 18px;">${ICONS.play || ICONS.convert}</span> Convert Audio
+            <button id="aud-btn-convert" class="btn btn-primary btn-lg" style="min-width: 180px;" disabled>
+              <span style="width: 16px; height: 16px;">${ICONS.play}</span> Convert Audio
             </button>
           </div>
 
-          <div id="aud-result-box" style="display: none; padding: var(--space-4); background: var(--color-success-bg); border-radius: var(--radius-md); align-items: center; justify-content: space-between;">
+          <div id="aud-result-box" style="display: none; padding: var(--space-3-5) var(--space-4); background: var(--color-success-bg); border: 1px solid var(--color-success-border); border-radius: var(--radius-lg); align-items: center; justify-content: space-between;">
             <div>
-              <strong style="color: var(--color-success);">Audio Conversion Completed</strong>
-              <div style="font-size: 12px; color: var(--text-secondary);" id="aud-result-msg">Output validated and saved.</div>
+              <strong style="color: var(--color-success); font-size: var(--font-size-sm);">Audio Conversion Completed</strong>
+              <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;" id="aud-result-msg">Output validated and saved.</div>
             </div>
             <div style="display: flex; gap: var(--space-2);">
-              <a id="aud-download-btn" class="btn btn-primary btn-sm" download>Download</a>
-              <button id="aud-open-folder-btn" class="btn btn-secondary btn-sm">Show in Folder</button>
+              <a id="aud-download-btn" class="btn btn-primary btn-sm" download>
+                <span style="width: 13px; height: 13px;">${ICONS.download}</span> Download
+              </a>
+              <button id="aud-open-folder-btn" class="btn btn-secondary btn-sm">
+                <span style="width: 13px; height: 13px;">${ICONS.folder}</span> Reveal in Folder
+              </button>
             </div>
           </div>
         </div>
@@ -232,7 +251,7 @@ function setupListeners(container) {
         document.getElementById("aud-target-fmt").value = "flac";
         lufsToggle.checked = false;
         lufsControls.style.display = "none";
-        showToast("Applied Lossless Archive Preset: FLAC bit-perfect", "info");
+        showToast("Applied Lossless Preset: FLAC bit-perfect", "info");
       }
     });
   });
@@ -333,6 +352,6 @@ async function convertAudio() {
     showToast(`Audio conversion failed: ${err.message}`, "error");
   } finally {
     btn.disabled = false;
-    btn.innerHTML = `<span style="width: 18px; height: 18px;">${ICONS.play || ICONS.convert}</span> Convert Audio`;
+    btn.innerHTML = `<span style="width: 18px; height: 18px;">${ICONS.play}</span> Convert Audio`;
   }
 }

@@ -1,4 +1,4 @@
-/* Global Reset & Base Typography */
+/* Global Reset & Sophisticated Apple Typography */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -11,23 +11,32 @@ html, body {
   overflow: hidden;
   font-family: var(--font-family-sans);
   font-size: var(--font-size-base);
+  letter-spacing: var(--letter-spacing-normal);
   color: var(--text-primary);
   background-color: var(--bg-app);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   user-select: none;
+}
+
+/* Subtle selection highlight */
+::selection {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 input, textarea, select, button {
   font-family: inherit;
   font-size: inherit;
+  letter-spacing: inherit;
   color: inherit;
 }
 
-/* Custom sleek scrollbars */
+/* Sleek minimalist Apple scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-track {
@@ -35,38 +44,58 @@ input, textarea, select, button {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-normal);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.14);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: rgba(255, 255, 255, 0.24);
+  background-clip: content-box;
 }
 
-/* Headings */
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.28);
+}
+
+/* Headings with delicate negative letter-spacing */
 h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   line-height: 1.25;
+  letter-spacing: var(--letter-spacing-tight);
   color: var(--text-primary);
 }
 
-h1 { font-size: var(--font-size-xl); }
+h1 { font-size: var(--font-size-xl); font-weight: var(--font-weight-bold); }
 h2 { font-size: var(--font-size-lg); }
 h3 { font-size: var(--font-size-md); }
 
 p {
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--text-secondary);
 }
 
 code, pre, .mono {
   font-family: var(--font-family-mono);
+  letter-spacing: -0.01em;
 }
 
 a {
   color: var(--color-primary);
   text-decoration: none;
+  transition: color var(--transition-fast);
 }
 a:hover {
-  text-decoration: underline;
+  color: var(--color-primary-hover);
+}
+
+/* Smooth Focus visible outline */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }

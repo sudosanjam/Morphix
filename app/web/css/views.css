@@ -1,10 +1,32 @@
-/* Workspace Views Styles */
+/* Workspace Views Styles - Apple Pro Studio Deck & Layout Personas */
 
-/* 1. Convert Workspace */
+/* ==========================================================================
+   1. Convert Studio Layout
+   ========================================================================== */
 .convert-layout {
   display: flex;
-  gap: var(--space-6);
+  gap: var(--space-5);
   flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+/* When queue is empty: hide inspector and center the hero studio */
+.convert-layout.empty-queue {
+  justify-content: center;
+  align-items: center;
+}
+
+.convert-layout.empty-queue .convert-sidebar {
+  display: none !important;
+}
+
+.convert-layout.empty-queue .convert-main {
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+  padding-bottom: 0;
+  justify-content: center;
 }
 
 .convert-main {
@@ -13,74 +35,389 @@
   flex-direction: column;
   gap: var(--space-4);
   min-width: 0;
+  padding-bottom: 80px; /* Space for the floating bottom action dock */
 }
 
 .convert-sidebar {
-  width: 380px;
+  width: 360px;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   flex-shrink: 0;
+  transition: width var(--transition-normal), opacity var(--transition-normal);
 }
 
-.queue-header-actions {
+.convert-sidebar.collapsed {
+  display: none;
+}
+
+/* ==========================================================================
+   2. Empty State: Creative Morphing Studio Hero
+   ========================================================================== */
+.studio-hero-card {
+  border: 1.5px dashed var(--border-elevated);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  background: radial-gradient(circle at 50% 20%, rgba(var(--hyperspace-star-rgb), 0.08) 0%, var(--bg-surface) 80%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.studio-hero-card:hover, .studio-hero-card.drag-active {
+  border-color: var(--color-primary);
+  background-color: var(--bg-surface-elevated);
+  box-shadow: 0 0 35px -5px var(--color-primary-glow);
+}
+
+.studio-hero-icon-ring {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--color-primary-light) 0%, rgba(var(--hyperspace-trail-rgb), 0.15) 100%);
+  border: 1px solid var(--border-elevated);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  color: var(--color-primary);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  transition: transform var(--transition-spring);
 }
 
-.file-row {
+.studio-hero-card:hover .studio-hero-icon-ring {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.studio-hero-icon-ring svg {
+  width: 32px;
+  height: 32px;
+}
+
+.studio-hero-title {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+  color: var(--text-primary);
+  background: linear-gradient(135deg, var(--text-primary) 30%, var(--color-primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.studio-hero-sub {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  max-width: 480px;
+  line-height: 1.5;
+}
+
+/* Quick Starter Cards inside Hero */
+.studio-starter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 860px;
+  margin-top: var(--space-2);
+}
+
+.starter-item {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-3) var(--space-3-5);
+  text-align: left;
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  transition: all var(--transition-fast);
+}
+
+.starter-item:hover {
+  border-color: var(--color-primary-border);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.starter-item-icon {
+  width: 34px;
+  height: 34px;
   border-radius: var(--radius-md);
-  transition: border-color var(--transition-fast);
-}
-
-.file-row:hover {
-  border-color: var(--border-normal);
-}
-
-.file-row.selected {
-  border-color: var(--color-primary);
-  background-color: var(--color-primary-light);
-}
-
-.file-row-icon {
-  width: 24px;
-  height: 24px;
-  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
-.file-row-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.file-row-name {
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.starter-item-title {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   color: var(--text-primary);
 }
 
-.file-row-sub {
-  font-size: var(--font-size-xs);
+.starter-item-desc {
+  font-size: 11px;
   color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ==========================================================================
+   3. File Cards & Interactive Morphing Tiles
+   ========================================================================== */
+.queue-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: var(--space-3-5);
+}
+
+.morph-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: all var(--transition-fast);
+  position: relative;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+}
+
+.morph-card:hover {
+  border-color: var(--border-normal);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.morph-card.selected-card {
+  border-color: var(--color-primary);
+  background: radial-gradient(circle at top right, var(--color-primary-light), var(--bg-surface) 60%);
+  box-shadow: 0 0 20px -3px var(--color-primary-glow);
+}
+
+.morph-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: var(--space-2);
 }
 
-/* 2. Command Palette */
+.morph-card-file-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2-5);
+  min-width: 0;
+}
+
+.morph-card-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.morph-card-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.morph-card-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+/* Morph Flow Pill (Source -> Destination) */
+.morph-flow-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  gap: var(--space-2);
+}
+
+.morph-tag {
+  font-size: 11px;
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-family-mono);
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+}
+
+.morph-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--color-primary);
+}
+
+.morph-arrow svg {
+  width: 14px;
+  height: 14px;
+}
+
+.morph-target-select {
+  flex: 1;
+  height: 26px;
+  padding: 0 22px 0 8px;
+  font-size: 11.5px;
+  font-weight: var(--font-weight-semibold);
+  font-family: var(--font-family-mono);
+  color: var(--color-primary);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+}
+
+/* Size Savings Chip */
+.savings-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-success);
+  background: var(--color-success-bg);
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+}
+
+/* ==========================================================================
+   4. Floating Smart Action Dock (Apple macOS style)
+   ========================================================================== */
+.floating-action-dock {
+  position: fixed;
+  bottom: 42px;
+  left: calc(50% + 100px); /* Adjust for sidebar */
+  transform: translateX(-50%);
+  width: calc(100% - 320px);
+  max-width: 760px;
+  background-color: var(--bg-surface-glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-elevated);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-modal), 0 0 25px -5px rgba(0, 0, 0, 0.4);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  z-index: 40;
+  animation: dockSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dockSlideUp {
+  from { opacity: 0; transform: translate(-50%, 18px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.dock-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  overflow-x: auto;
+}
+
+.dock-quick-label {
+  font-size: 10.5px;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.dock-chips-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dock-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+.dock-summary {
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  font-family: var(--font-family-mono);
+  white-space: nowrap;
+}
+
+.btn-convert-dock {
+  height: 36px;
+  padding: 0 18px;
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-xs);
+  letter-spacing: -0.01em;
+}
+
+/* ==========================================================================
+   5. Prototype Persona Variations
+   ========================================================================== */
+/* Prototype 1: Island Minimal (Raycast style) */
+[data-prototype="island"] #sidebar {
+  display: none;
+}
+
+[data-prototype="island"] .convert-main {
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+[data-prototype="island"] .floating-action-dock {
+  left: 50%;
+  max-width: 680px;
+}
+
+/* Prototype 2: Power Table (Dense pro layout) */
+[data-prototype="table"] .queue-cards-grid {
+  display: none;
+}
+[data-prototype="table"] .table-container {
+  display: block !important;
+}
+
+/* ==========================================================================
+   6. Command Palette, Images & Audio Tools
+   ========================================================================== */
 .command-palette-modal {
   width: 90%;
-  max-width: 580px;
+  max-width: 560px;
+  background-color: var(--bg-surface-glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-elevated);
+  box-shadow: var(--shadow-modal);
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
 }
 
 .palette-input-wrap {
@@ -89,12 +426,13 @@
   gap: var(--space-3);
   padding: var(--space-4) var(--space-5);
   border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
 }
 
 .palette-input-wrap svg {
   width: 20px;
   height: 20px;
-  color: var(--text-muted);
+  color: var(--color-primary);
 }
 
 .palette-input {
@@ -103,6 +441,7 @@
   border: none;
   outline: none;
   font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
   color: var(--text-primary);
 }
 
@@ -116,17 +455,21 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-3) var(--space-4);
+  padding: 8px var(--space-3-5);
   border-radius: var(--radius-md);
   cursor: pointer;
   color: var(--text-secondary);
   font-size: var(--font-size-sm);
-  transition: background-color var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
 .palette-item:hover, .palette-item.active {
   background-color: var(--color-primary-light);
   color: var(--color-primary);
+}
+
+.palette-item.active {
+  box-shadow: inset 0 0 0 1px var(--color-primary-border);
 }
 
 .palette-item-icon-title {
@@ -135,12 +478,13 @@
   gap: var(--space-3);
 }
 
-/* 3. Image Tools Comparison */
+/* Image Tools Grid */
 .image-tools-grid {
   display: grid;
   grid-template-columns: 1fr 340px;
-  gap: var(--space-6);
+  gap: var(--space-5);
   flex: 1;
+  min-height: 0;
 }
 
 .image-preview-panel {
@@ -148,19 +492,26 @@
   flex-direction: column;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   overflow: hidden;
+  box-shadow: var(--shadow-sm);
 }
 
 .image-canvas-container {
   flex: 1;
-  min-height: 420px;
+  min-height: 440px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(var(--border-subtle) 1px, transparent 1px);
-  background-size: 16px 16px;
-  padding: var(--space-4);
+  background: 
+    linear-gradient(45deg, rgba(255, 255, 255, 0.02) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.02) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+  background-color: var(--bg-input);
+  padding: var(--space-5);
   overflow: hidden;
   position: relative;
 }
@@ -169,29 +520,36 @@
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
   border-radius: var(--radius-sm);
+  transition: transform var(--transition-normal);
 }
 
 .image-meta-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--space-3) var(--space-5);
+  padding: 10px var(--space-5);
   background-color: var(--bg-surface-elevated);
   border-top: 1px solid var(--border-subtle);
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
 }
 
-/* 4. Audio Tools View */
+.image-meta-bar strong {
+  color: var(--color-primary);
+  font-family: var(--font-family-mono);
+}
+
+/* Audio Stats & Presets */
 .audio-meta-card {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--space-3);
-  padding: var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-2-5);
+  padding: var(--space-3-5);
   background-color: var(--bg-surface-elevated);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-subtle);
   margin-bottom: var(--space-4);
 }
 
@@ -202,126 +560,72 @@
 }
 
 .audio-stat-label {
-  font-size: var(--font-size-xs);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
   color: var(--text-muted);
 }
 
 .audio-stat-value {
   font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-mocha);
   font-family: var(--font-family-mono);
 }
 
-/* 5. Diagnostics Grid */
-.diag-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
-}
-
-.engine-card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
+/* Inspector Accordions */
+.inspector-section {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-}
-
-.engine-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.engine-name {
-  font-weight: 600;
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
-}
-
-.engine-path {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
-  font-family: var(--font-family-mono);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.log-stream-viewer {
-  background-color: var(--bg-input);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-4);
-  font-family: var(--font-family-mono);
-  font-size: 11px;
-  color: var(--text-secondary);
-  max-height: 220px;
-  overflow-y: auto;
-  line-height: 1.6;
-}
-
-/* 6. Presets View */
-.presets-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: var(--space-4);
-}
-
-.preset-card {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
   gap: var(--space-3);
-  transition: border-color var(--transition-fast);
-}
-
-.preset-card:hover {
-  border-color: var(--color-primary);
-}
-
-/* 7. Slide-out Queue Drawer */
-#queue-drawer {
-  position: fixed;
-  top: 52px;
-  right: 0;
-  bottom: 30px;
-  width: 360px;
-  background-color: var(--bg-surface);
-  border-left: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-lg);
-  display: flex;
-  flex-direction: column;
-  transform: translateX(100%);
-  transition: transform var(--transition-normal);
-  z-index: 50;
-}
-
-#queue-drawer.open {
-  transform: translateX(0);
-}
-
-.drawer-header {
-  padding: var(--space-4);
+  padding-bottom: var(--space-3);
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.inspector-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.inspector-section-title {
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  color: var(--text-muted);
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.drawer-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: var(--space-3);
+.quality-presets-wrap {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  gap: var(--space-1-5);
+  margin-top: 4px;
+}
+
+.quality-preset-btn {
+  flex: 1;
+  height: 24px;
+  font-size: 11px;
+  padding: 0 4px;
+  border-radius: var(--radius-xs);
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.quality-preset-btn:hover {
+  background: var(--color-primary-light);
+  border-color: var(--color-primary-border);
+  color: var(--color-primary);
+}
+
+.quality-preset-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #11121c;
+  font-weight: var(--font-weight-semibold);
 }

@@ -1,95 +1,349 @@
-/* Morphix Design Tokens and Color System - Dark Blue Abyss Theme */
+/* Morphix Design Tokens & Color System
+ * Sophisticated Apple Pro Aesthetic with Dark Pastel Themes:
+ * - Obsidian (Slate Blue)
+ * - Coffee (Espresso, Warm Caramel & Mocha)
+ * - Ruby (Midnight Bordeaux & Velvet Crimson)
+ * - Sapphire (Deep Ocean Abyss & Electric Cyan)
+ * - Emerald (Botanical Pine & Pastel Mint)
+ * - Amethyst (Cosmic Violet & Lavender)
+ */
+
 :root {
-  /* Brand Palette - Dark Blue Abyss (Electric Azure & Deep Ocean) */
-  --color-primary: #0284c7;
-  --color-primary-hover: #0369a1;
-  --color-primary-light: rgba(2, 132, 199, 0.15);
-  --color-primary-glow: rgba(2, 132, 199, 0.35);
+  /* Default Brand Accents (Obsidian Slate) */
+  --color-primary: #89b4fa;            /* Celestial Pastel Blue */
+  --color-primary-hover: #b4befe;      /* Lighter Periwinkle */
+  --color-primary-active: #74c7ec;     /* Soft Sky Cyan */
+  --color-primary-light: rgba(137, 180, 250, 0.12);
+  --color-primary-border: rgba(137, 180, 250, 0.28);
+  --color-primary-glow: rgba(137, 180, 250, 0.25);
 
-  --color-success: #10b981;
-  --color-success-bg: rgba(16, 185, 129, 0.15);
-  --color-warning: #f59e0b;
-  --color-warning-bg: rgba(245, 158, 11, 0.15);
-  --color-danger: #ef4444;
-  --color-danger-bg: rgba(239, 68, 68, 0.15);
-  --color-info: #38bdf8;
+  /* Warm Pastel Mocha & Brown Accents */
+  --color-mocha: #cba6f7;              /* Lavender Mocha */
+  --color-mocha-hover: #d7b49e;        /* Warm Hazelnut */
+  --color-mocha-light: rgba(203, 166, 247, 0.12);
+  --color-caramel: #d4a373;            /* Warm Caramel Mocha */
+  --color-caramel-light: rgba(212, 163, 115, 0.14);
 
-  /* Typography scale */
-  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-family-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  /* Status Pastel Colors */
+  --color-success: #a6e3a1;            /* Pastel Sage Green */
+  --color-success-bg: rgba(166, 227, 161, 0.13);
+  --color-success-border: rgba(166, 227, 161, 0.3);
 
+  --color-warning: #f9e2af;            /* Pastel Warm Amber */
+  --color-warning-bg: rgba(249, 226, 175, 0.13);
+  --color-warning-border: rgba(249, 226, 175, 0.3);
+
+  --color-danger: #f38ba8;             /* Pastel Coral Rose */
+  --color-danger-bg: rgba(243, 139, 168, 0.13);
+  --color-danger-border: rgba(243, 139, 168, 0.3);
+
+  --color-info: #89dceb;               /* Pastel Frost Cyan */
+  --color-info-bg: rgba(137, 220, 235, 0.13);
+
+  /* File Family Pastel Identifiers */
+  --family-image: #89b4fa;
+  --family-audio: #cba6f7;
+  --family-document: #fab387;
+  --family-spreadsheet: #a6e3a1;
+  --family-archive: #f5c2e7;
+
+  /* Typography Scale */
+  --font-family-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+
+  --font-size-2xs: 0.6875rem; /* 11px */
   --font-size-xs: 0.75rem;    /* 12px */
   --font-size-sm: 0.8125rem;  /* 13px */
   --font-size-base: 0.875rem; /* 14px */
-  --font-size-md: 1rem;       /* 16px */
-  --font-size-lg: 1.125rem;   /* 18px */
+  --font-size-md: 0.9375rem;  /* 15px */
+  --font-size-lg: 1.0625rem;  /* 17px */
   --font-size-xl: 1.25rem;    /* 20px */
   --font-size-2xl: 1.5rem;    /* 24px */
 
-  /* Spacing system */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --letter-spacing-tight: -0.022em;
+  --letter-spacing-normal: -0.011em;
+  --letter-spacing-wide: 0.04em;
+
+  /* Spacing System */
+  --space-0-5: 2px;
   --space-1: 4px;
+  --space-1-5: 6px;
   --space-2: 8px;
+  --space-2-5: 10px;
   --space-3: 12px;
+  --space-3-5: 14px;
   --space-4: 16px;
   --space-5: 20px;
   --space-6: 24px;
   --space-8: 32px;
+  --space-10: 40px;
 
-  /* Radii */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  /* Apple-Style Smooth Corner Radii */
+  --radius-xs: 5px;
+  --radius-sm: 7px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 22px;
   --radius-full: 9999px;
 
-  /* Transitions */
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s ease;
+  /* Apple Fluid Spring Timing */
+  --transition-fast: 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-normal: 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-spring: 0.38s cubic-bezier(0.175, 0.885, 0.32, 1.15);
+
+  /* Hyperspace dynamic particles */
+  --hyperspace-star-rgb: 137, 180, 250;
+  --hyperspace-trail-rgb: 203, 166, 247;
 }
 
-/* Dark Blue Abyss Theme (Default) */
+/* ==========================================================================
+   Base Dark Mode Foundation: Obsidian (Default)
+   ========================================================================== */
 [data-theme="dark"], :root {
-  --bg-app: #030712;
-  --bg-surface: #081021;
-  --bg-surface-elevated: #0d192f;
-  --bg-surface-hover: #132442;
-  --bg-surface-active: #193056;
-  --bg-input: #050c19;
+  --bg-app: #0e0f15;
+  --bg-surface: #151621;
+  --bg-surface-glass: rgba(21, 22, 33, 0.78);
+  --bg-surface-elevated: #1d1e2c;
+  --bg-surface-hover: #262738;
+  --bg-surface-active: #2f3045;
+  --bg-input: #12131c;
+  --bg-sidebar: #12131c;
+  --bg-sidebar-glass: rgba(18, 19, 28, 0.82);
 
-  --border-subtle: #11223e;
-  --border-normal: #19345d;
-  --border-focus: #0284c7;
+  --border-subtle: rgba(255, 255, 255, 0.065);
+  --border-normal: rgba(255, 255, 255, 0.11);
+  --border-elevated: rgba(255, 255, 255, 0.16);
+  --border-focus: var(--color-primary);
 
-  --text-primary: #f0f6fc;
-  --text-secondary: #90a4cb;
-  --text-muted: #57709a;
-  --text-inverse: #030712;
+  --text-primary: #f0f2f8;
+  --text-secondary: #a2a8c0;
+  --text-muted: #676d85;
+  --text-inverse: #0e0f15;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 6px -1px rgba(0, 3, 10, 0.6), 0 2px 4px -1px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 3, 10, 0.7), 0 4px 6px -2px rgba(0, 0, 0, 0.5);
-  --shadow-modal: 0 20px 25px -5px rgba(0, 2, 8, 0.85), 0 10px 10px -5px rgba(0, 0, 0, 0.7);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 12px 30px -4px rgba(0, 0, 0, 0.5), 0 4px 10px -2px rgba(0, 0, 0, 0.35);
+  --shadow-modal: 0 24px 50px -6px rgba(0, 0, 0, 0.65), 0 10px 16px -4px rgba(0, 0, 0, 0.5);
+
+  --glass-blur: blur(20px) saturate(180%);
+  --glass-blur-subtle: blur(12px);
 }
 
-/* Light Theme */
+/* ==========================================================================
+   Palette 1: Coffee (Warm Espresso, Roasted Mocha & Caramel)
+   ========================================================================== */
+[data-palette="coffee"] {
+  --bg-app: #120e0c;
+  --bg-surface: #1a1411;
+  --bg-surface-glass: rgba(26, 20, 17, 0.82);
+  --bg-surface-elevated: #241c17;
+  --bg-surface-hover: #312520;
+  --bg-surface-active: #3e3029;
+  --bg-input: #15100d;
+  --bg-sidebar: #15100d;
+  --bg-sidebar-glass: rgba(21, 16, 13, 0.85);
+
+  --color-primary: #d4a373;            /* Warm Caramel Mocha */
+  --color-primary-hover: #e2b78b;
+  --color-primary-active: #c28e5c;
+  --color-primary-light: rgba(212, 163, 115, 0.15);
+  --color-primary-border: rgba(212, 163, 115, 0.34);
+  --color-primary-glow: rgba(212, 163, 115, 0.28);
+
+  --color-mocha: #e0a96d;
+  --color-caramel: #b87a4c;
+
+  --border-subtle: rgba(212, 163, 115, 0.08);
+  --border-normal: rgba(212, 163, 115, 0.15);
+  --border-elevated: rgba(212, 163, 115, 0.24);
+
+  --text-primary: #f6eee3;
+  --text-secondary: #c2ada0;
+  --text-muted: #826e63;
+
+  --hyperspace-star-rgb: 224, 169, 109;
+  --hyperspace-trail-rgb: 246, 238, 227;
+}
+
+/* ==========================================================================
+   Palette 2: Ruby (Midnight Bordeaux & Velvet Crimson Rose)
+   ========================================================================== */
+[data-palette="ruby"] {
+  --bg-app: #13080b;
+  --bg-surface: #1b0d12;
+  --bg-surface-glass: rgba(27, 13, 18, 0.82);
+  --bg-surface-elevated: #27131b;
+  --bg-surface-hover: #361b26;
+  --bg-surface-active: #472332;
+  --bg-input: #170b0f;
+  --bg-sidebar: #150a0e;
+  --bg-sidebar-glass: rgba(21, 10, 14, 0.85);
+
+  --color-primary: #f38ba8;            /* Velvet Rose Crimson */
+  --color-primary-hover: #f7a8be;
+  --color-primary-active: #e66d8e;
+  --color-primary-light: rgba(243, 139, 168, 0.15);
+  --color-primary-border: rgba(243, 139, 168, 0.34);
+  --color-primary-glow: rgba(243, 139, 168, 0.28);
+
+  --color-mocha: #f2cdcd;
+  --color-caramel: #eba0ac;
+
+  --border-subtle: rgba(243, 139, 168, 0.08);
+  --border-normal: rgba(243, 139, 168, 0.15);
+  --border-elevated: rgba(243, 139, 168, 0.24);
+
+  --text-primary: #fdf0f4;
+  --text-secondary: #c7a7b2;
+  --text-muted: #856773;
+
+  --hyperspace-star-rgb: 243, 139, 168;
+  --hyperspace-trail-rgb: 242, 205, 205;
+}
+
+/* ==========================================================================
+   Palette 3: Sapphire (Midnight Ocean Abyss & Electric Cyan)
+   ========================================================================== */
+[data-palette="sapphire"] {
+  --bg-app: #080d16;
+  --bg-surface: #0e1624;
+  --bg-surface-glass: rgba(14, 22, 36, 0.82);
+  --bg-surface-elevated: #152136;
+  --bg-surface-hover: #1d2d49;
+  --bg-surface-active: #273b5f;
+  --bg-input: #0b121e;
+  --bg-sidebar: #0a101a;
+  --bg-sidebar-glass: rgba(10, 16, 26, 0.85);
+
+  --color-primary: #38bdf8;            /* Vibrant Sky Sapphire */
+  --color-primary-hover: #7dd3fc;
+  --color-primary-active: #0ea5e9;
+  --color-primary-light: rgba(56, 189, 248, 0.15);
+  --color-primary-border: rgba(56, 189, 248, 0.34);
+  --color-primary-glow: rgba(56, 189, 248, 0.28);
+
+  --color-mocha: #818cf8;
+  --color-caramel: #38bdf8;
+
+  --border-subtle: rgba(56, 189, 248, 0.08);
+  --border-normal: rgba(56, 189, 248, 0.15);
+  --border-elevated: rgba(56, 189, 248, 0.24);
+
+  --text-primary: #f0f7ff;
+  --text-secondary: #9cb4cf;
+  --text-muted: #607590;
+
+  --hyperspace-star-rgb: 56, 189, 248;
+  --hyperspace-trail-rgb: 129, 140, 248;
+}
+
+/* ==========================================================================
+   Palette 4: Emerald (Botanical Pine Forest & Pastel Mint)
+   ========================================================================== */
+[data-palette="emerald"] {
+  --bg-app: #07120d;
+  --bg-surface: #0c1b14;
+  --bg-surface-glass: rgba(12, 27, 20, 0.82);
+  --bg-surface-elevated: #12271d;
+  --bg-surface-hover: #193628;
+  --bg-surface-active: #224736;
+  --bg-input: #0a1711;
+  --bg-sidebar: #091510;
+  --bg-sidebar-glass: rgba(9, 21, 16, 0.85);
+
+  --color-primary: #5eead4;            /* Pastel Mint Emerald */
+  --color-primary-hover: #99f6e4;
+  --color-primary-active: #2dd4bf;
+  --color-primary-light: rgba(94, 234, 212, 0.15);
+  --color-primary-border: rgba(94, 234, 212, 0.34);
+  --color-primary-glow: rgba(94, 234, 212, 0.28);
+
+  --color-mocha: #a6e3a1;
+  --color-caramel: #86efac;
+
+  --border-subtle: rgba(94, 234, 212, 0.08);
+  --border-normal: rgba(94, 234, 212, 0.15);
+  --border-elevated: rgba(94, 234, 212, 0.24);
+
+  --text-primary: #effcf7;
+  --text-secondary: #9ec2b6;
+  --text-muted: #618277;
+
+  --hyperspace-star-rgb: 94, 234, 212;
+  --hyperspace-trail-rgb: 166, 227, 161;
+}
+
+/* ==========================================================================
+   Palette 5: Amethyst (Cosmic Violet & Radiant Lavender)
+   ========================================================================== */
+[data-palette="amethyst"] {
+  --bg-app: #0e0817;
+  --bg-surface: #160d24;
+  --bg-surface-glass: rgba(22, 13, 36, 0.82);
+  --bg-surface-elevated: #201334;
+  --bg-surface-hover: #2c1a47;
+  --bg-surface-active: #3a225e;
+  --bg-input: #120b1e;
+  --bg-sidebar: #110a1c;
+  --bg-sidebar-glass: rgba(17, 10, 28, 0.85);
+
+  --color-primary: #c084fc;            /* Radiant Pastel Amethyst */
+  --color-primary-hover: #d8b4fe;
+  --color-primary-active: #a855f7;
+  --color-primary-light: rgba(192, 132, 252, 0.15);
+  --color-primary-border: rgba(192, 132, 252, 0.34);
+  --color-primary-glow: rgba(192, 132, 252, 0.28);
+
+  --color-mocha: #cba6f7;
+  --color-caramel: #f5c2e7;
+
+  --border-subtle: rgba(192, 132, 252, 0.08);
+  --border-normal: rgba(192, 132, 252, 0.15);
+  --border-elevated: rgba(192, 132, 252, 0.24);
+
+  --text-primary: #f9f5ff;
+  --text-secondary: #bba6d6;
+  --text-muted: #7a6694;
+
+  --hyperspace-star-rgb: 192, 132, 252;
+  --hyperspace-trail-rgb: 203, 166, 247;
+}
+
+/* ==========================================================================
+   Light Mode Support (Clean Slate Latte)
+   ========================================================================== */
 [data-theme="light"] {
-  --bg-app: #f0f4f9;
+  --bg-app: #f7f6f2;
   --bg-surface: #ffffff;
-  --bg-surface-elevated: #e6eef8;
-  --bg-surface-hover: #dbe7f5;
-  --bg-surface-active: #cadcf0;
+  --bg-surface-glass: rgba(255, 255, 255, 0.85);
+  --bg-surface-elevated: #f0eee8;
+  --bg-surface-hover: #e7e5de;
+  --bg-surface-active: #dcdae2;
   --bg-input: #ffffff;
+  --bg-sidebar: #f2f0ea;
+  --bg-sidebar-glass: rgba(242, 240, 234, 0.85);
 
-  --border-subtle: #dbe4f0;
-  --border-normal: #c5d4e8;
-  --border-focus: #0284c7;
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-normal: rgba(0, 0, 0, 0.11);
+  --border-elevated: rgba(0, 0, 0, 0.16);
+  --border-focus: var(--color-primary);
 
-  --text-primary: #0a1728;
-  --text-secondary: #3b506d;
-  --text-muted: #728aa8;
+  --text-primary: #18191f;
+  --text-secondary: #4b4f60;
+  --text-muted: #787e93;
   --text-inverse: #ffffff;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 14px -2px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.1), 0 4px 10px -2px rgba(0, 0, 0, 0.05);
+  --shadow-modal: 0 24px 48px -8px rgba(0, 0, 0, 0.16), 0 8px 16px -3px rgba(0, 0, 0, 0.08);
+
+  --hyperspace-star-rgb: 100, 116, 139;
+  --hyperspace-trail-rgb: 148, 163, 184;
 }

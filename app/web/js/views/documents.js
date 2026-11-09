@@ -1,5 +1,5 @@
 /**
- * Documents and Office Processing Workspace.
+ * Documents and Office Processing Workspace - Apple Pro Document Studio.
  */
 
 import { api } from "../api.js";
@@ -11,31 +11,40 @@ export function initDocumentsView() {
   const container = document.getElementById("view-documents");
   if (!container) return;
 
+  window.morphixDocsDrop = (files) => {
+    if (files.length > 0) {
+      loadDocumentFile(files[0]);
+    }
+  };
+
   renderDocumentsView(container);
   setupListeners(container);
 }
 
 function renderDocumentsView(container) {
   container.innerHTML = `
-    <div style="display: flex; flex-direction: column; gap: var(--space-4); max-width: 900px; margin: 0 auto; width: 100%;">
+    <div style="display: flex; flex-direction: column; gap: var(--space-4); max-width: 940px; margin: 0 auto; width: 100%;">
+      <!-- Header -->
       <div>
-        <h2>Documents & Spreadsheets Processing</h2>
-        <p style="font-size: var(--font-size-xs); color: var(--text-muted);">
-          PDF page extraction & rotation, Markdown-to-PDF rendering, XLSX spreadsheet data conversion
+        <h2>Document & PDF Processing Studio</h2>
+        <p style="font-size: var(--font-size-xs); color: var(--text-muted); margin-top: 2px;">
+          PDF page extraction & rotation, Word DOCX/DOC rendering, Markdown compilation, and spreadsheet transformation
         </p>
       </div>
 
       <!-- File Upload Box -->
       <div class="card" style="display: flex; align-items: center; justify-content: space-between; padding: var(--space-4);">
         <div style="display: flex; align-items: center; gap: var(--space-3);">
-          <span style="width: 28px; height: 28px; color: var(--color-primary);">${ICONS.document}</span>
+          <span style="width: 26px; height: 26px; color: var(--color-caramel);">${ICONS.document}</span>
           <div>
-            <strong id="doc-active-name" style="font-size: var(--font-size-sm);">No document loaded</strong>
-            <div id="doc-active-sub" style="font-size: var(--font-size-xs); color: var(--text-muted);">Supports Word (DOCX/DOC), PDF, Images to PDF, Markdown, TXT, XLSX, CSV</div>
+            <strong id="doc-active-name" style="font-size: var(--font-size-sm); color: var(--text-primary);">No document loaded</strong>
+            <div id="doc-active-sub" style="font-size: var(--font-size-xs); color: var(--text-muted); margin-top: 2px;">
+              Supports Word (DOCX/DOC), PDF, Markdown, TXT, HTML, XLSX, CSV
+            </div>
           </div>
         </div>
         <button id="doc-btn-upload" class="btn btn-primary btn-sm">
-          <span style="width: 14px; height: 14px;">${ICONS.plus}</span> Load Document
+          <span style="width: 13px; height: 13px;">${ICONS.plus}</span> Load Document
         </button>
         <input type="file" id="doc-file-input" accept=".docx,.doc,.pdf,.md,.txt,.html,.xlsx,.csv,.tsv,.png,.jpg,.jpeg,.webp,.bmp,.tiff" style="display: none;" />
       </div>
@@ -43,7 +52,10 @@ function renderDocumentsView(container) {
       <!-- Processing Form Card -->
       <div class="card" id="doc-processing-card" style="display: none;">
         <div class="card-header">
-          <h3 class="card-title">Document Operations</h3>
+          <div style="display: flex; align-items: center; gap: var(--space-2);">
+            <span style="width: 15px; height: 15px; color: var(--color-caramel);">${ICONS.sliders}</span>
+            <h3 class="card-title">Document Operations</h3>
+          </div>
           <span id="doc-detected-badge" class="badge badge-primary">PDF</span>
         </div>
         <div class="card-body" style="display: flex; flex-direction: column; gap: var(--space-4);">
@@ -52,21 +64,27 @@ function renderDocumentsView(container) {
             <!-- Populated via JS -->
           </div>
 
-          <div style="display: flex; justify-content: flex-end; margin-top: var(--space-3);">
-            <button id="doc-btn-execute" class="btn btn-primary btn-lg">
-              <span style="width: 18px; height: 18px;">${ICONS.play || ICONS.convert}</span> Process Document
+          <div style="display: flex; justify-content: flex-end; margin-top: var(--space-2);">
+            <button id="doc-btn-execute" class="btn btn-primary btn-lg" style="min-width: 180px;">
+              <span style="width: 16px; height: 16px;">${ICONS.play}</span> Process Document
             </button>
           </div>
 
           <!-- Result box -->
-          <div id="doc-result-box" style="display: none; padding: var(--space-4); background: var(--color-success-bg); border-radius: var(--radius-md); align-items: center; justify-content: space-between;">
-            <div>
-              <strong style="color: var(--color-success);">Processing Completed</strong>
-              <div style="font-size: 12px; color: var(--text-secondary);" id="doc-result-msg">Target generated successfully.</div>
-            </div>
-            <div style="display: flex; gap: var(--space-2);">
-              <a id="doc-download-btn" class="btn btn-primary btn-sm" download>Download</a>
-              <button id="doc-folder-btn" class="btn btn-secondary btn-sm">Show in Folder</button>
+          <div id="doc-result-box" style="display: none; padding: var(--space-4); background: var(--color-success-bg); border: 1px solid var(--color-success-border); border-radius: var(--radius-lg); align-items: center; justify-content: space-between;">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+              <div>
+                <strong style="color: var(--color-success); font-size: var(--font-size-sm);">Processing Completed</strong>
+                <div style="font-size: 11.5px; color: var(--text-secondary); margin-top: 2px;" id="doc-result-msg">Target generated successfully.</div>
+              </div>
+              <div style="display: flex; gap: var(--space-2);">
+                <a id="doc-download-btn" class="btn btn-primary btn-sm" download>
+                  <span style="width: 13px; height: 13px;">${ICONS.download}</span> Download
+                </a>
+                <button id="doc-folder-btn" class="btn btn-secondary btn-sm">
+                  <span style="width: 13px; height: 13px;">${ICONS.folder}</span> Reveal in Folder
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -165,7 +183,7 @@ function renderDynamicDocFields(format) {
           <div class="form-group" id="pdf-quality-group">
             <label class="form-label">
               <span>Image Quality</span>
-              <span id="pdf-quality-val" style="font-family: var(--font-family-mono); font-size: 11px;">90%</span>
+              <span id="pdf-quality-val" class="slider-val">90%</span>
             </label>
             <div class="slider-wrapper">
               <input type="range" id="pdf-quality-slider" class="range-slider" min="1" max="100" value="90" />
@@ -234,7 +252,7 @@ function renderDynamicDocFields(format) {
           <div class="form-group" id="word-quality-group">
             <label class="form-label">
               <span>Image Quality</span>
-              <span id="word-quality-val" style="font-family: var(--font-family-mono); font-size: 11px;">90%</span>
+              <span id="word-quality-val" class="slider-val">90%</span>
             </label>
             <div class="slider-wrapper">
               <input type="range" id="pdf-quality-slider" class="range-slider" min="1" max="100" value="90" />
@@ -461,10 +479,10 @@ async function executeDocOperation() {
                   </div>
                   <div style="display: flex; gap: var(--space-2); width: 100%; margin-top: var(--space-1);">
                     <a href="${f.download_url}" class="btn btn-primary btn-sm" style="flex: 1;" download="${f.filename}">
-                      <span style="width: 14px; height: 14px;">${ICONS.download}</span> Download
+                      <span style="width: 13px; height: 13px;">${ICONS.download}</span> Download
                     </a>
                     <a href="${f.preview_url}" target="_blank" class="btn btn-secondary btn-sm" title="Open full-size in new tab">
-                      <span style="width: 14px; height: 14px;">↗</span>
+                      <span style="width: 13px; height: 13px;">↗</span>
                     </a>
                   </div>
                 </div>
@@ -488,6 +506,6 @@ async function executeDocOperation() {
     showToast(`Document operation failed: ${err.message}`, "error");
   } finally {
     execBtn.disabled = false;
-    execBtn.innerHTML = `<span style="width: 18px; height: 18px;">${ICONS.play || ICONS.convert}</span> Process Document`;
+    execBtn.innerHTML = `<span style="width: 18px; height: 18px;">${ICONS.play}</span> Process Document`;
   }
 }

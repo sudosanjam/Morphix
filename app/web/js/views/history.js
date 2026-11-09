@@ -1,5 +1,5 @@
 /**
- * History Workspace View.
+ * History Workspace View - Apple Pro Aesthetic.
  */
 
 import { api } from "../api.js";
@@ -15,20 +15,21 @@ export function initHistoryView() {
 
 function renderHistoryView(container) {
   container.innerHTML = `
-    <div style="display: flex; flex-direction: column; gap: var(--space-4); max-width: 1000px; margin: 0 auto; width: 100%;">
+    <div style="display: flex; flex-direction: column; gap: var(--space-4); max-width: 1040px; margin: 0 auto; width: 100%;">
+      <!-- Header -->
       <div style="display: flex; align-items: center; justify-content: space-between;">
         <div>
-          <h2>Conversion History</h2>
-          <p style="font-size: var(--font-size-xs); color: var(--text-muted);">
-            Local SQLite records of past conversions · Source files are never duplicated
+          <h2>Activity & Conversion History</h2>
+          <p style="font-size: var(--font-size-xs); color: var(--text-muted); margin-top: 2px;">
+            Local SQLite audit records · Source files and conversions remain 100% on this computer
           </p>
         </div>
         <div style="display: flex; gap: var(--space-2);">
           <button id="hist-btn-refresh" class="btn btn-secondary btn-sm">
-            <span style="width: 14px; height: 14px;">${ICONS.refresh}</span> Refresh
+            <span style="width: 13px; height: 13px;">${ICONS.refresh}</span> Refresh
           </button>
           <button id="hist-btn-clear" class="btn btn-danger btn-sm">
-            <span style="width: 14px; height: 14px;">${ICONS.trash}</span> Clear History
+            <span style="width: 13px; height: 13px;">${ICONS.trash}</span> Clear History
           </button>
         </div>
       </div>
@@ -38,7 +39,7 @@ function renderHistoryView(container) {
           <thead>
             <tr>
               <th>Source File</th>
-              <th>Target Format</th>
+              <th>Target</th>
               <th>Engine</th>
               <th>Status</th>
               <th>Duration</th>
@@ -48,7 +49,7 @@ function renderHistoryView(container) {
           </thead>
           <tbody id="hist-table-body">
             <tr>
-              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: var(--space-6);">
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: var(--space-8);">
                 Loading history...
               </td>
             </tr>
@@ -84,7 +85,7 @@ export async function loadHistoryData() {
     if (!entries || entries.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" style="text-align: center; color: var(--text-muted); padding: var(--space-6);">
+          <td colspan="7" style="text-align: center; color: var(--text-muted); padding: var(--space-8);">
             No conversion history yet. Completed conversions will appear here.
           </td>
         </tr>
@@ -107,18 +108,20 @@ export async function loadHistoryData() {
       if (item.target_path) {
         actionHtml = `
           <button class="btn btn-secondary btn-sm hist-open-folder" data-path="${item.target_path}" title="Reveal in folder">
-            <span style="width: 14px; height: 14px;">${ICONS.folder}</span>
+            <span style="width: 13px; height: 13px;">${ICONS.folder}</span>
           </button>
         `;
       }
 
       tr.innerHTML = `
-        <td><strong title="${item.source_path}">${srcName}</strong></td>
+        <td>
+          <span style="font-weight: 500; color: var(--text-primary);" title="${item.source_path}">${srcName}</span>
+        </td>
         <td><span class="badge badge-primary">${item.target_format.toUpperCase()}</span></td>
-        <td><span style="color: var(--text-muted); font-size: 12px;">${item.engine || '--'}</span></td>
+        <td><span style="color: var(--text-muted); font-size: 11.5px;">${item.engine || '--'}</span></td>
         <td>${statusBadge}</td>
-        <td><span style="font-family: var(--font-family-mono); font-size: 12px;">${durStr}</span></td>
-        <td><span style="font-size: 12px;">${sizeStr}</span></td>
+        <td><span style="font-family: var(--font-family-mono); font-size: 11.5px; color: var(--text-secondary);">${durStr}</span></td>
+        <td><span style="font-size: 11.5px; color: var(--text-secondary);">${sizeStr}</span></td>
         <td style="text-align: right;">${actionHtml}</td>
       `;
 
