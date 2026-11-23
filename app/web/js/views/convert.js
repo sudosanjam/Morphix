@@ -390,6 +390,22 @@ async function handleFiles(files) {
   }
 }
 
+function formatTargetOptionLabel(t) {
+  const fmt = (t.format || "").toLowerCase();
+  if (fmt === "pdf_dark") return "PDF · Dark Charcoal";
+  if (fmt === "pdf_oled") return "PDF · OLED Pure Black";
+  if (fmt === "pdf_sepia") return "PDF · Warm Sepia";
+  if (fmt === "pdf_midnight") return "PDF · Midnight Slate";
+  if (fmt === "pdf") return "PDF Document";
+  if (t.name) {
+    if (t.name.toLowerCase().startsWith(fmt)) {
+      return t.name;
+    }
+    return `${t.format.toUpperCase()} · ${t.name}`;
+  }
+  return (t.format || "").toUpperCase();
+}
+
 function renderQueue() {
   const convertLayout = document.querySelector(".convert-layout");
   const dropzone = document.getElementById("convert-dropzone");
@@ -448,7 +464,7 @@ function renderQueue() {
   state.queue.forEach(item => {
     const isSelected = item.id === state.selectedQueueItemId;
     const targetOptions = item.targets.map(t => 
-      `<option value="${t.format}" ${t.format === item.selectedTarget ? "selected" : ""}>${t.format.toUpperCase()} (${t.name})</option>`
+      `<option value="${t.format}" ${t.format === item.selectedTarget ? "selected" : ""}>${formatTargetOptionLabel(t)}</option>`
     ).join("");
 
     // Status HTML
