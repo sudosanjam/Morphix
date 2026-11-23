@@ -473,14 +473,16 @@ function renderQueue() {
       statusHtml = `<span class="badge badge-danger" title="${item.error || 'Error'}">Failed</span>`;
     }
 
-    // Savings estimate
+    // Savings / Theme estimate
     let savingsHtml = "";
     if (item.selectedTarget === "webp" || item.selectedTarget === "avif") {
       savingsHtml = `<span class="savings-chip">~ -70% size</span>`;
     } else if (item.selectedTarget === "mp3" && item.format === "wav") {
       savingsHtml = `<span class="savings-chip">~ -85% size</span>`;
+    } else if (item.format === "pdf" && item.settings.dark_mode && item.settings.dark_mode !== "none") {
+      savingsHtml = `<span class="savings-chip" style="background: var(--color-mocha-light); color: var(--color-mocha); font-weight: 600;">🌙 ${item.settings.dark_mode.toUpperCase()}</span>`;
     } else if (item.selectedTarget === "pdf") {
-      savingsHtml = `<span class="savings-chip">Doc Bundle</span>`;
+      savingsHtml = `<span class="savings-chip">PDF Document</span>`;
     }
 
     // Actions block
@@ -796,14 +798,61 @@ function renderSettingsPanel() {
     `;
   }
 
-  // 4. PDF Page Range & Rotation
-  if (targetFmt === "pdf" && item.format === "pdf") {
+  // 4. PDF Reader, Dark Mode & Page Manipulation
+  if (item.format === "pdf") {
+    const currentTheme = item.settings.dark_mode || (targetFmt.startsWith("pdf_") ? targetFmt.replace("pdf_", "") : "");
+    const contrastVal = item.settings.dark_mode_contrast !== undefined ? item.settings.dark_mode_contrast : 1.05;
+    const dpiVal = item.settings.dpi || 150;
+
     html += `
       <div class="inspector-section">
-        <div class="inspector-section-title">PDF Optimization</div>
+        <div class="inspector-section-title">Dark Mode & Reader Themes</div>
+        <div class="pdf-theme-selector-grid">
+          <button type="button" class="pdf-theme-btn ${!currentTheme || currentTheme === 'none' ? 'active' : ''}" data-set-dark="none" title="Original unaltered PDF colors">
+            <span class="theme-dot" style="background: #ffffff; border: 1px solid #aaa;"></span>
+            <span>Original</span>
+          </button>
+          <button type="button" class="pdf-theme-btn ${currentTheme === 'dark' ? 'active' : ''}" data-set-dark="dark" title="Charcoal black page with softened dull-white text">
+            <span class="theme-dot" style="background: #18191c;"></span>
+            <span>🌙 Dark</span>
+          </button>
+          <button type="button" class="pdf-theme-btn ${currentTheme === 'oled' ? 'active' : ''}" data-set-dark="oled" title="Pure #000000 black page for OLED / battery saving">
+            <span class="theme-dot" style="background: #000000; border: 1px solid #444;"></span>
+            <span>⚡ OLED</span>
+          </button>
+          <button type="button" class="pdf-theme-btn ${currentTheme === 'midnight' ? 'active' : ''}" data-set-dark="midnight" title="Deep navy midnight slate background">
+            <span class="theme-dot" style="background: #0f172a;"></span>
+            <span>🌌 Midnight</span>
+          </button>
+          <button type="button" class="pdf-theme-btn ${currentTheme === 'sepia_dark' || currentTheme === 'sepia' ? 'active' : ''}" data-set-dark="sepia_dark" title="Warm dark mocha espresso reader">
+            <span class="theme-dot" style="background: #1e1713;"></span>
+            <span>☕ Espresso</span>
+          </button>
+          <button type="button" class="pdf-theme-btn ${currentTheme === 'sepia_light' ? 'active' : ''}" data-set-dark="sepia_light" title="Warm cream sepia paper eye-care mode">
+            <span class="theme-dot" style="background: #fbf0d9; border: 1px solid #d4c5a9;"></span>
+            <span>📖 Sepia</span>
+          </button>
+          <button type="button" class="pdf-theme-btn ${currentTheme === 'amber' ? 'active' : ''}" data-set-dark="amber" title="Vintage CRT amber on deep black">
+            <span class="theme-dot" style="background: #ffb000;"></span>
+            <span>✦ Amber</span>
+          </button>
+          <button type="button" class="pdf-theme-btn ${currentTheme === 'invert' ? 'active' : ''}" data-set-dark="invert" title="Mathematical color inversion">
+            <span class="theme-dot" style="background: linear-gradient(135deg, #000 50%, #fff 50%);"></span>
+            <span>⇄ Invert</span>
+          </button>
+        </div>
+
+        <div class="form-group" style="margin-top: 12px; margin-bottom: 8px;">
+          <div class="form-label-row">
+            <label class="form-label">Text & Line Contrast</label>
+            <span class="form-val" id="val-dark-contrast">${Math.round(contrastVal * 100)}%</span>
+          </div>
+          <input type="range" class="range-slider setting-input" data-key="dark_mode_contrast" min="0.8" max="1.5" step="0.05" value="${contrastVal}" />
+        </div>
+
         <div class="form-group">
-          <label class="form-label">Page Range</label>
-          <input type="text" class="input-text setting-input" data-key="page_range" placeholder="e.g. 1-3, 5" value="${item.settings.page_range || ''}" />
+          <label class="form-label">Page Filter</label>
+          <input type="text" class="input-text setting-input" data-key="page_range" placeholder="e.g. 1-3, 5 (blank = all)" value="${item.settings.page_range || ''}" />
         </div>
         <div class="form-group" style="margin-bottom: 0;">
           <label class="form-label">Rotate Orientation</label>
@@ -917,8 +966,13 @@ function renderSettingsPanel() {
         val = input.value ? Number(input.value) : undefined;
       } else if (input.type === "range") {
         val = Number(input.value);
-        const display = document.getElementById(`val-${key}`);
-        if (display) display.textContent = val + (key === "quality" ? "%" : "");
+        if (key === "dark_mode_contrast") {
+          const display = document.getElementById("val-dark-contrast");
+          if (display) display.textContent = `${Math.round(val * 100)}%`;
+        } else {
+          const display = document.getElementById(`val-${key}`);
+          if (display) display.textContent = val + (key === "quality" ? "%" : "");
+        }
       } else {
         val = input.value;
       }
@@ -926,6 +980,16 @@ function renderSettingsPanel() {
     };
     input.addEventListener("input", updateHandler);
     input.addEventListener("change", updateHandler);
+  });
+
+  panelBody.querySelectorAll("[data-set-dark]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const mode = btn.getAttribute("data-set-dark");
+      item.settings.dark_mode = mode === "none" ? "" : mode;
+      panelBody.querySelectorAll("[data-set-dark]").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderQueue();
+    });
   });
 
   panelBody.querySelectorAll("[data-set-quality]").forEach(btn => {

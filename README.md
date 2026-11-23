@@ -16,6 +16,8 @@
 ### Key Capabilities
 - **Strictly Offline & Private:** Operates 100% locally on your machine. No accounts, API keys, tracking, or network calls.
 - **Unified Core:** Both the local web GUI and the `morphix` CLI share the identical capability registry, conversion planner, and validation pipeline.
+- **PDF Dark Mode & Reader Themes:** Convert any light PDF into an eye-comforting dark mode PDF (charcoal background with softened dull-white text, OLED pure black `#000000`, Midnight slate, warm espresso, sepia paper, vintage amber terminal, or mathematical invert) with custom DPI and text contrast tuning.
+- **One-Click Windows Executables:** Native `Setup.exe`, `Update.exe`, and `Morphix.exe` launchers with embedded custom high-DPI icons for seamless 1-click installation, updating, and execution.
 - **Multi-Format Processing:** Raster images, high-fidelity audio, documents, spreadsheets, presentations, and structured data.
 - **Image-to-PDF & Batch Compilation:** Convert individual images or merge multiple images directly into unified multi-page PDFs with configurable DPI (`72` to `300`).
 - **Windows System Tray Integration:** Clean desktop presence with background console minimization and system notification tray controls.
@@ -46,18 +48,12 @@
 
 When you download and extract the Git ZIP package on any new computer:
 
-#### On Windows:
-Double-click or run the root installer:
-```cmd
-windows_install.bat
-```
-*(or run `powershell -ExecutionPolicy Bypass -File .\windows_install.ps1`)*
-
-- Automatically detects or prompts for Python 3 (>= 3.10).
-- Creates an isolated `.venv` virtual environment in the project directory.
-- Installs all dependencies (`requirements.txt`).
-- Creates a Desktop shortcut and root launcher `run_morphix.bat`.
-- Immediately launches the Morphix Web GUI in your default browser at `http://127.0.0.1:7474`.
+#### On Windows (One-Click Executables):
+Morphix includes native standalone 1-click executables with custom high-DPI icons:
+- **`Setup.exe` (or `Setup-Morphix.exe`)**: One-click environment installer. Verifies Python 3, sets up `.venv`, upgrades pip, installs all dependencies from `requirements.txt`, creates a Desktop shortcut, and offers to launch the app.
+- **`Update.exe` (or `Update-Morphix.exe`)**: One-click updater. Pulls latest commits from Git, syncs updated dependencies, and tests core integrity.
+- **`Morphix.exe` (or `Run-Morphix.exe`)**: One-click app launcher. Launches the local media engine and opens `http://127.0.0.1:7474` in your default browser.
+- *Companion scripts:* `setup.bat`, `update.bat`, and `run.bat` are also provided.
 
 #### On Linux:
 Run the root installer:
@@ -72,15 +68,9 @@ Run the root installer:
 
 ---
 
-### 3.2 Pre-Packaged Binary Distributions
-
-#### Windows Pre-built Installer / Portable:
-- **`Morphix-Setup.exe`**: Inno Setup installer registering Start Menu and PATH.
-- **`Morphix.exe`**: Portable standalone executable. Double-click to run anywhere.
-
-#### Everyday Launching:
-After the initial one-click install, you can start Morphix at any time by:
-- **Windows**: Double-clicking `run_morphix.bat` or the Desktop shortcut.
+### 3.2 Running & Everyday Launching
+After the initial one-click setup, you can launch Morphix at any time by:
+- **Windows**: Double-clicking `Morphix.exe` or `run.bat` (or your Desktop shortcut).
 - **Linux**: Running `./run_morphix.sh` or typing `morphix` in your terminal.
 
 ---

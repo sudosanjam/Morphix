@@ -143,6 +143,10 @@ function renderDynamicDocFields(format) {
           <label class="form-label">Action / Target Format</label>
           <select id="doc-action-sel" class="input-select">
             <option value="pdf">Modify PDF (Page selection, Rotation, Metadata)</option>
+            <option value="pdf_dark">🌙 Dark Mode PDF (Charcoal Black & Dull White Text)</option>
+            <option value="pdf_oled">⚡ OLED Pure Black PDF (High Contrast #000000)</option>
+            <option value="pdf_sepia">☕ Warm Sepia / Espresso Reader PDF</option>
+            <option value="pdf_midnight">🌌 Midnight Slate Blue PDF</option>
             <option value="txt">Extract Plain Text (.txt)</option>
             <option value="png">Convert Pages to PNG Images (.png)</option>
             <option value="jpg">Convert Pages to JPEG Images (.jpg)</option>
@@ -150,6 +154,32 @@ function renderDynamicDocFields(format) {
             <option value="tiff">Convert Pages to TIFF Images (.tiff)</option>
             <option value="bmp">Convert Pages to BMP Bitmaps (.bmp)</option>
           </select>
+        </div>
+
+        <!-- Reader & Dark Mode Palette selector -->
+        <div class="form-group" id="doc-darkmode-group">
+          <label class="form-label">Reader & Dark Mode Palette</label>
+          <select id="doc-darkmode-sel" class="input-select">
+            <option value="none">Original (No dark filter)</option>
+            <option value="dark">🌙 Charcoal Dark (Black background, dull white text)</option>
+            <option value="oled">⚡ OLED Pure Black (True #000000, battery saver)</option>
+            <option value="midnight">🌌 Midnight Slate (Navy dark mode)</option>
+            <option value="sepia_dark">☕ Espresso Dark (Warm dark reader)</option>
+            <option value="sepia_light">📖 Sepia Paper (Warm cream eye-care)</option>
+            <option value="amber">✦ Amber Terminal (Retro amber on black)</option>
+            <option value="invert">⇄ Invert (Mathematical inverse)</option>
+          </select>
+        </div>
+
+        <!-- Contrast Slider -->
+        <div class="form-group" id="doc-contrast-group" style="display: none;">
+          <div class="form-label-row" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <label class="form-label" style="margin-bottom: 0;">Text & Line Contrast</label>
+            <span id="doc-contrast-val" class="slider-val" style="font-size: 11px; color: var(--color-primary); font-family: var(--font-family-mono); font-weight: 600;">105%</span>
+          </div>
+          <div class="slider-wrapper">
+            <input type="range" id="doc-contrast-slider" class="range-slider" min="80" max="150" value="105" />
+          </div>
         </div>
 
         <!-- Extra options container -->
@@ -199,6 +229,24 @@ function renderDynamicDocFields(format) {
     const qualityGroup = document.getElementById("pdf-quality-group");
     const qualitySlider = document.getElementById("pdf-quality-slider");
     const qualityVal = document.getElementById("pdf-quality-val");
+    const darkSel = document.getElementById("doc-darkmode-sel");
+    const contrastGroup = document.getElementById("doc-contrast-group");
+    const contrastSlider = document.getElementById("doc-contrast-slider");
+    const contrastVal = document.getElementById("doc-contrast-val");
+
+    if (contrastSlider && contrastVal) {
+      contrastSlider.addEventListener("input", (e) => {
+        contrastVal.textContent = `${e.target.value}%`;
+      });
+    }
+
+    if (darkSel) {
+      darkSel.addEventListener("change", (e) => {
+        if (contrastGroup) {
+          contrastGroup.style.display = e.target.value !== "none" ? "block" : "none";
+        }
+      });
+    }
 
     if (qualitySlider && qualityVal) {
       qualitySlider.addEventListener("input", (e) => {
@@ -211,13 +259,24 @@ function renderDynamicDocFields(format) {
       if (val === "pdf") {
         extraOpts.style.display = "grid";
         imageOpts.style.display = "none";
+        document.getElementById("doc-darkmode-group").style.display = "block";
+      } else if (val.startsWith("pdf_")) {
+        extraOpts.style.display = "grid";
+        imageOpts.style.display = "none";
+        document.getElementById("doc-darkmode-group").style.display = "block";
+        const mode = val.replace("pdf_", "");
+        if (darkSel) darkSel.value = mode === "sepia" ? "sepia_dark" : mode;
+        if (contrastGroup) contrastGroup.style.display = "block";
       } else if (val === "txt") {
         extraOpts.style.display = "none";
         imageOpts.style.display = "none";
+        document.getElementById("doc-darkmode-group").style.display = "none";
+        if (contrastGroup) contrastGroup.style.display = "none";
       } else {
         // Image targets
         extraOpts.style.display = "grid";
         imageOpts.style.display = "grid";
+        document.getElementById("doc-darkmode-group").style.display = "block";
         qualityGroup.style.display = ["jpg", "jpeg", "webp"].includes(val) ? "flex" : "none";
       }
     });
@@ -400,6 +459,16 @@ async function executeDocOperation() {
   const grayToggle = document.getElementById("img-doc-grayscale");
   if (grayToggle) {
     settings.grayscale = grayToggle.checked;
+  }
+
+  const darkSel = document.getElementById("doc-darkmode-sel");
+  if (darkSel && darkSel.value && darkSel.value !== "none") {
+    settings.dark_mode = darkSel.value;
+  }
+
+  const contrastSlider = document.getElementById("doc-contrast-slider");
+  if (contrastSlider && darkSel && darkSel.value !== "none") {
+    settings.dark_mode_contrast = Number(contrastSlider.value) / 100.0;
   }
 
   execBtn.disabled = true;

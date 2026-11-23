@@ -44,7 +44,8 @@ FORMAT_FAMILIES = {
     # Documents
     "pdf": "document", "docx": "document", "doc": "document", "odt": "document",
     "rtf": "document", "txt": "document", "md": "document", "html": "document",
-    "htm": "document", "epub": "ebook",
+    "htm": "document", "epub": "ebook", "pdf_dark": "document", "pdf_oled": "document",
+    "pdf_sepia": "document", "pdf_midnight": "document",
     # Spreadsheets
     "xlsx": "spreadsheet", "xls": "spreadsheet", "ods": "spreadsheet",
     "csv": "spreadsheet", "tsv": "spreadsheet",

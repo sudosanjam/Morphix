@@ -25,9 +25,94 @@ class PDFEngine(EngineCapability):
     display_name = "Morphix PDF Engine"
 
     SUPPORTED_INPUTS = ["pdf", "txt", "md", "png", "jpg", "jpeg", "webp", "bmp", "tiff", "tif", "gif", "ico"]
-    SUPPORTED_OUTPUTS = ["pdf", "txt", "png", "jpg", "jpeg", "webp", "bmp", "tiff"]
+    SUPPORTED_OUTPUTS = ["pdf", "txt", "png", "jpg", "jpeg", "webp", "bmp", "tiff", "pdf_dark", "pdf_sepia", "pdf_oled", "pdf_midnight"]
+
+    DARK_MODE_PALETTES: Dict[str, Dict[str, Any]] = {
+        "dark": {
+            "name": "Classic Charcoal",
+            "bg": (20, 20, 24),         # Deep charcoal black
+            "text": (228, 232, 240),    # Soft dull white
+            "description": "Black page with comfortable dull white text"
+        },
+        "oled": {
+            "name": "OLED Pure Black",
+            "bg": (0, 0, 0),             # True pitch black
+            "text": (212, 212, 212),     # Soft dull off-white
+            "description": "Zero light emission on black, battery saver"
+        },
+        "midnight": {
+            "name": "Midnight Slate",
+            "bg": (15, 23, 42),          # Deep navy slate
+            "text": (226, 232, 240),     # Light ice silver text
+            "description": "Deep ocean slate background with soft silver text"
+        },
+        "sepia_dark": {
+            "name": "Espresso Dark",
+            "bg": (28, 23, 19),          # Warm dark espresso roast
+            "text": (242, 232, 218),     # Warm candlelight cream
+            "description": "Warm dark coffee theme for night reading"
+        },
+        "sepia_light": {
+            "name": "Warm Sepia Paper",
+            "bg": (251, 240, 217),       # Antique parchment cream
+            "text": (41, 37, 36),        # Soft dark charcoal ink
+            "description": "Kindle style warm daylight paper reader"
+        },
+        "sepia": {
+            "name": "Warm Sepia Paper",
+            "bg": (251, 240, 217),
+            "text": (41, 37, 36),
+            "description": "Kindle style warm daylight paper reader"
+        },
+        "amber": {
+            "name": "Amber Terminal",
+            "bg": (18, 18, 20),          # Charcoal obsidian
+            "text": (251, 191, 36),      # Warm golden amber
+            "description": "E-ink style amber text on dark background"
+        },
+        "invert": {
+            "name": "Negative Invert",
+            "bg": (0, 0, 0),
+            "text": (255, 255, 255),
+            "description": "Full mathematical color inversion"
+        }
+    }
 
     _tls = threading.local()
+
+    @classmethod
+    def apply_dark_mode_to_image(
+        cls,
+        img: Image.Image,
+        mode: str = "dark",
+        contrast: float = 1.05
+    ) -> Image.Image:
+        """Transform a page image into Dark Mode or Reader Mode using high-performance LUT."""
+        mode_key = str(mode or "dark").lower().strip()
+        if mode_key == "invert":
+            return ImageOps.invert(img.convert("RGB"))
+
+        palette = cls.DARK_MODE_PALETTES.get(mode_key, cls.DARK_MODE_PALETTES["dark"])
+        bg_color = palette["bg"]
+        text_color = palette["text"]
+
+        # Build 768-element RGB lookup table for Pillow point() running in C
+        lut = []
+        for c in range(3):
+            bg = bg_color[c]
+            text = text_color[c]
+            for x in range(256):
+                # Standard PDF has white background (255) and black text (0)
+                # t=1 when x=0 (text), t=0 when x=255 (background)
+                t = (255.0 - float(x)) / 255.0
+                if contrast != 1.0:
+                    t = ((t - 0.5) * contrast) + 0.5
+                    t = max(0.0, min(1.0, t))
+                val = int(bg + (text - bg) * t)
+                lut.append(max(0, min(255, val)))
+
+        rgb_img = img.convert("RGB")
+        return rgb_img.point(lut)
 
     @classmethod
     def get_last_output_files(cls) -> List[Path]:
@@ -126,9 +211,86 @@ class PDFEngine(EngineCapability):
                     progress_cb(100, "Text extraction complete.")
                 return target_path
 
-            # 2. PDF -> PDF (Page operations, metadata editing, rotation, page range)
-            elif src_ext == "pdf" and tgt_fmt == "pdf":
+            # 2. PDF -> PDF (Page operations, Dark Mode / Reader Mode, rotation, page range)
+            elif src_ext == "pdf" and (tgt_fmt == "pdf" or tgt_fmt.startswith("pdf_")):
                 cls._set_last_output_files([target_path])
+                dark_mode = settings.get("dark_mode") or settings.get("reader_theme")
+                if tgt_fmt.startswith("pdf_"):
+                    dark_mode = tgt_fmt.replace("pdf_", "")
+
+                is_dark_requested = dark_mode and str(dark_mode).lower() not in ("none", "false", "off", "0", "")
+
+                if is_dark_requested:
+                    if pdfium is None:
+                        raise ConversionFailedError(
+                            "pypdfium2 library is required for Dark Mode PDF rendering. "
+                            "Install it via: pip install pypdfium2"
+                        )
+
+                    pdf_doc = pdfium.PdfDocument(str(source_path))
+                    total_pages = len(pdf_doc)
+                    if total_pages == 0:
+                        raise ConversionFailedError("PDF document contains no pages.")
+
+                    # Parse page range
+                    page_range_str = settings.get("page_range")
+                    target_pages: List[int] = []
+                    if page_range_str:
+                        for part in str(page_range_str).split(","):
+                            part = part.strip()
+                            if "-" in part:
+                                s, e = part.split("-", 1)
+                                start = max(1, int(s.strip()))
+                                end = min(total_pages, int(e.strip()))
+                                target_pages.extend(range(start - 1, end))
+                            elif part.isdigit():
+                                p = int(part)
+                                if 1 <= p <= total_pages:
+                                    target_pages.append(p - 1)
+                    else:
+                        target_pages = list(range(total_pages))
+
+                    if not target_pages:
+                        target_pages = list(range(total_pages))
+                    target_pages = sorted(list(dict.fromkeys(target_pages)))
+
+                    dpi = int(settings.get("dpi", 150))
+                    scale = max(0.5, min(dpi / 72.0, 6.0))
+                    rotate = int(settings.get("rotate_pages", 0))
+                    contrast = float(settings.get("dark_mode_contrast", settings.get("contrast", 1.05)))
+
+                    rendered_pages: List[Image.Image] = []
+                    num_target = len(target_pages)
+
+                    for idx, page_num in enumerate(target_pages):
+                        if progress_cb:
+                            pct = int(10 + (idx / num_target) * 75)
+                            progress_cb(pct, f"Rendering dark mode page {page_num + 1} of {total_pages} ({dark_mode})...")
+
+                        page = pdf_doc[page_num]
+                        pil_img = page.render(scale=scale, rotation=rotate).to_pil().convert("RGB")
+                        dark_page = cls.apply_dark_mode_to_image(pil_img, dark_mode, contrast=contrast)
+                        rendered_pages.append(dark_page)
+
+                    if progress_cb:
+                        progress_cb(88, "Compiling Dark Mode PDF document...")
+
+                    target_path.parent.mkdir(parents=True, exist_ok=True)
+                    rendered_pages[0].save(
+                        target_path,
+                        "PDF",
+                        resolution=dpi,
+                        save_all=True,
+                        append_images=rendered_pages[1:],
+                        quality=92,
+                        optimize=True
+                    )
+
+                    if progress_cb:
+                        progress_cb(100, f"Dark Mode PDF ({dark_mode}) complete.")
+                    return target_path
+
+                # Standard PDF -> PDF (Page operations, metadata editing, rotation, page range)
                 reader = pypdf.PdfReader(str(source_path))
                 writer = pypdf.PdfWriter()
 
@@ -239,6 +401,12 @@ class PDFEngine(EngineCapability):
 
                     page = pdf_doc[page_num]
                     pil_img = page.render(scale=scale, rotation=rotate).to_pil()
+
+                    # Apply dark mode if requested for image export
+                    img_dark_mode = settings.get("dark_mode") or settings.get("reader_theme")
+                    if img_dark_mode and str(img_dark_mode).lower() not in ("none", "false", "off", "0", ""):
+                        img_contrast = float(settings.get("dark_mode_contrast", settings.get("contrast", 1.05)))
+                        pil_img = cls.apply_dark_mode_to_image(pil_img, img_dark_mode, contrast=img_contrast)
 
                     # Handle color format compatibility
                     if norm_fmt in ("jpg", "bmp"):

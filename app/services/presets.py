@@ -84,6 +84,42 @@ BUILTIN_PRESETS: List[Preset] = [
         is_builtin=True
     ),
     Preset(
+        id="pdf_dark_mode",
+        name="PDF Dark Mode (Charcoal)",
+        description="Turns white pages to charcoal black with dull white text for comfortable low-light reading",
+        category="document",
+        target_format="pdf",
+        settings={"dark_mode": "dark", "dpi": 150, "dark_mode_contrast": 1.05},
+        is_builtin=True
+    ),
+    Preset(
+        id="pdf_oled_black",
+        name="PDF OLED Pure Black",
+        description="True pitch black background with soft off-white text for zero light bleed and battery saving",
+        category="document",
+        target_format="pdf",
+        settings={"dark_mode": "oled", "dpi": 150, "dark_mode_contrast": 1.05},
+        is_builtin=True
+    ),
+    Preset(
+        id="pdf_sepia_reader",
+        name="PDF Warm Sepia Reader",
+        description="Kindle-style warm parchment paper reader mode with soft dark charcoal ink",
+        category="document",
+        target_format="pdf",
+        settings={"dark_mode": "sepia_light", "dpi": 150, "dark_mode_contrast": 1.05},
+        is_builtin=True
+    ),
+    Preset(
+        id="pdf_midnight_slate",
+        name="PDF Midnight Slate",
+        description="Deep oceanic slate background with soft silver text",
+        category="document",
+        target_format="pdf",
+        settings={"dark_mode": "midnight", "dpi": 150, "dark_mode_contrast": 1.05},
+        is_builtin=True
+    ),
+    Preset(
         id="pdf_to_images",
         name="PDF to PNG Pages (150 DPI)",
         description="Render all pages of a PDF document to crisp individual PNG images",

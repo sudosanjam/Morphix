@@ -56,32 +56,38 @@ def resolve_output_path(
     tgt_fmt = canonical_format(target_format)
     stem = source_path.stem
 
+    # Map dark mode PDF aliases to standard .pdf extension and append helpful suffix
+    out_ext = "pdf" if tgt_fmt.startswith("pdf_") else tgt_fmt
+    if tgt_fmt.startswith("pdf_"):
+        mode_suffix = tgt_fmt.replace("pdf_", "")
+        stem = f"{stem}_{mode_suffix}"
+
     if output_destination:
         dest_p = Path(output_destination).resolve()
         if dest_p.is_dir() or str(output_destination).endswith(("\\", "/")):
-            target_file = dest_p / f"{stem}.{tgt_fmt}"
+            target_file = dest_p / f"{stem}.{out_ext}"
         else:
             target_file = dest_p
     elif config.settings.default_output_dir:
         dest_p = Path(config.settings.default_output_dir).resolve()
         dest_p.mkdir(parents=True, exist_ok=True)
-        target_file = dest_p / f"{stem}.{tgt_fmt}"
+        target_file = dest_p / f"{stem}.{out_ext}"
     else:
         # Default: alongside source file
-        target_file = source_path.parent / f"{stem}.{tgt_fmt}"
+        target_file = source_path.parent / f"{stem}.{out_ext}"
 
     # Prevent accidental overwriting of input file!
     if target_file.resolve() == source_path.resolve():
-        target_file = target_file.parent / f"{stem}_converted.{tgt_fmt}"
+        target_file = target_file.parent / f"{stem}_converted.{out_ext}"
 
     # Handle overwrite policy
     if target_file.exists() and overwrite_policy == "rename":
         counter = 1
-        new_name = f"{stem}_{counter}.{tgt_fmt}"
+        new_name = f"{stem}_{counter}.{out_ext}"
         candidate = target_file.parent / new_name
         while candidate.exists():
             counter += 1
-            candidate = target_file.parent / f"{stem}_{counter}.{tgt_fmt}"
+            candidate = target_file.parent / f"{stem}_{counter}.{out_ext}"
         target_file = candidate
 
     return target_file

@@ -88,6 +88,10 @@ FORMAT_METADATA: Dict[str, Dict[str, Any]] = {
     "ac3": {"name": "AC3 Dolby Audio", "family": "audio", "mime": "audio/ac3", "ext": ".ac3"},
     # Documents
     "pdf": {"name": "PDF Document", "family": "document", "mime": "application/pdf", "ext": ".pdf"},
+    "pdf_dark": {"name": "PDF (Dark Mode Charcoal)", "family": "document", "mime": "application/pdf", "ext": ".pdf"},
+    "pdf_oled": {"name": "PDF (OLED True Black)", "family": "document", "mime": "application/pdf", "ext": ".pdf"},
+    "pdf_sepia": {"name": "PDF (Warm Sepia Reader)", "family": "document", "mime": "application/pdf", "ext": ".pdf"},
+    "pdf_midnight": {"name": "PDF (Midnight Slate)", "family": "document", "mime": "application/pdf", "ext": ".pdf"},
     "md": {"name": "Markdown Document", "family": "document", "mime": "text/markdown", "ext": ".md"},
     "html": {"name": "HTML Document", "family": "document", "mime": "text/html", "ext": ".html"},
     "txt": {"name": "Plain Text", "family": "document", "mime": "text/plain", "ext": ".txt"},
@@ -260,6 +264,15 @@ class CapabilityRegistry:
 
         # 3. PDF Operations & Document-to-PDF (pypdf, reportlab, pypdfium2)
         pdf_settings = {
+            "dark_mode": SettingDefinition(
+                name="dark_mode", label="Dark Mode / Reader Theme", type="select", default="none",
+                options=["none", "dark", "oled", "midnight", "sepia_dark", "sepia_light", "amber", "invert"],
+                category="basic", description="Transform PDF pages into Dark Mode or Reader Mode with eye-friendly color schemes"
+            ),
+            "dark_mode_contrast": SettingDefinition(
+                name="dark_mode_contrast", label="Dark Mode Contrast", type="float", default=1.05, min_val=0.5, max_val=2.0, step=0.05,
+                category="advanced", description="Contrast multiplier for text readability in dark mode"
+            ),
             "page_range": SettingDefinition(
                 name="page_range", label="Page Range", type="str", default=None,
                 category="basic", description="Page range filter (e.g. '1-5, 8')"
@@ -294,7 +307,7 @@ class CapabilityRegistry:
             id="pypdf_pdf_convert",
             engine_name="pdf",
             source_formats=["pdf", "txt", "md", "png", "jpg", "jpeg", "webp", "bmp", "tiff", "tif", "gif", "ico"],
-            target_formats=["png", "jpg", "jpeg", "webp", "txt", "pdf", "bmp", "tiff"],
+            target_formats=["pdf", "png", "jpg", "jpeg", "webp", "txt", "bmp", "tiff", "pdf_dark", "pdf_oled", "pdf_sepia", "pdf_midnight"],
             lossiness="configurable",
             metadata_preservation="full",
             potential_info_loss="Extracting PDF to TXT discards vector graphics and formatting. Converting PDF to images rasterizes vector layouts.",
