@@ -392,10 +392,10 @@ async function handleFiles(files) {
 
 function formatTargetOptionLabel(t) {
   const fmt = (t.format || "").toLowerCase();
-  if (fmt === "pdf_dark") return "PDF · Dark Charcoal";
-  if (fmt === "pdf_oled") return "PDF · OLED Pure Black";
-  if (fmt === "pdf_sepia") return "PDF · Warm Sepia";
-  if (fmt === "pdf_midnight") return "PDF · Midnight Slate";
+  if (fmt === "pdf_dark") return "PDF · Charcoal";
+  if (fmt === "pdf_oled") return "PDF · OLED";
+  if (fmt === "pdf_sepia") return "PDF · Sepia";
+  if (fmt === "pdf_midnight") return "PDF · Navy";
   if (fmt === "pdf") return "PDF Document";
   if (t.name) {
     if (t.name.toLowerCase().startsWith(fmt)) {
@@ -404,6 +404,118 @@ function formatTargetOptionLabel(t) {
     return `${t.format.toUpperCase()} · ${t.name}`;
   }
   return (t.format || "").toUpperCase();
+}
+
+function getThemeDisplayName(mode) {
+  if (!mode || mode === "none") return "Original";
+  const map = {
+    dark: "Charcoal",
+    oled: "OLED",
+    midnight: "Navy",
+    sepia_dark: "Espresso",
+    sepia_light: "Sepia",
+    sepia: "Sepia",
+    amber: "Amber",
+    invert: "Invert"
+  };
+  return map[mode] || mode;
+}
+
+let inspectorPreviewState = {
+  itemId: null,
+  page: 1,
+  totalPages: 1,
+  showOriginal: false
+};
+
+function updateLivePreview() {
+  const img = document.getElementById("inspector-preview-img");
+  const badge = document.getElementById("preview-mode-badge");
+  const pageLbl = document.getElementById("preview-page-lbl");
+  const pageCtrls = document.getElementById("preview-page-ctrls");
+  const item = state.queue.find(i => i.id === state.selectedQueueItemId);
+  if (!img || !item) return;
+
+  const targetFmt = item.selectedTarget || "";
+  const currentTheme = item.settings.dark_mode || (targetFmt.startsWith("pdf_") ? targetFmt.replace("pdf_", "") : "none");
+  const activeDark = inspectorPreviewState.showOriginal ? "none" : currentTheme;
+  const contrast = item.settings.dark_mode_contrast !== undefined ? item.settings.dark_mode_contrast : 1.05;
+
+  img.classList.add("loading");
+  const url = api.getPreviewRenderUrl(item.path, {
+    page: inspectorPreviewState.page,
+    dark_mode: activeDark,
+    contrast: contrast,
+    dpi: 120,
+    max_width: 800
+  });
+
+  const temp = new Image();
+  temp.onload = () => {
+    img.src = url;
+    img.classList.remove("loading");
+  };
+  temp.onerror = () => {
+    img.classList.remove("loading");
+  };
+  temp.src = url;
+
+  if (badge) badge.textContent = inspectorPreviewState.showOriginal ? "Original" : getThemeDisplayName(activeDark);
+  if (pageLbl) pageLbl.textContent = `${inspectorPreviewState.page} / ${inspectorPreviewState.totalPages}`;
+  if (pageCtrls) pageCtrls.style.display = inspectorPreviewState.totalPages > 1 ? "flex" : "none";
+
+  const btnDark = document.getElementById("btn-preview-theme");
+  const btnOrig = document.getElementById("btn-preview-orig");
+  if (btnDark) btnDark.classList.toggle("active", !inspectorPreviewState.showOriginal);
+  if (btnOrig) btnOrig.classList.toggle("active", inspectorPreviewState.showOriginal);
+}
+
+function openFullscreenPreviewModal(item) {
+  let modal = document.getElementById("morphix-preview-modal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "morphix-preview-modal";
+    modal.className = "preview-modal-overlay";
+    document.body.appendChild(modal);
+  }
+
+  const targetFmt = item.selectedTarget || "";
+  const currentTheme = item.settings.dark_mode || (targetFmt.startsWith("pdf_") ? targetFmt.replace("pdf_", "") : "none");
+  const activeDark = inspectorPreviewState.showOriginal ? "none" : currentTheme;
+  const contrast = item.settings.dark_mode_contrast !== undefined ? item.settings.dark_mode_contrast : 1.05;
+  const highResUrl = api.getPreviewRenderUrl(item.path, {
+    page: inspectorPreviewState.page,
+    dark_mode: activeDark,
+    contrast: contrast,
+    dpi: 200,
+    max_width: 1600
+  });
+
+  modal.innerHTML = `
+    <div class="preview-modal-content">
+      <div class="card-header" style="border-bottom: 1px solid var(--border-subtle); padding: var(--space-3) var(--space-4);">
+        <div style="display: flex; align-items: center; gap: var(--space-2);">
+          <span style="font-weight: 600; font-size: var(--font-size-sm);">${item.name}</span>
+          <span class="badge badge-neutral">Page ${inspectorPreviewState.page} of ${inspectorPreviewState.totalPages}</span>
+          <span class="badge" style="background: var(--color-primary-light); color: var(--color-primary);">${inspectorPreviewState.showOriginal ? 'Original' : getThemeDisplayName(activeDark)}</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-close-preview-modal">
+          <span style="width: 14px; height: 14px;">${ICONS.close}</span>
+        </button>
+      </div>
+      <div class="preview-modal-body">
+        <img class="preview-modal-img" src="${highResUrl}" alt="${item.name} High Res" />
+      </div>
+    </div>
+  `;
+
+  modal.classList.add("active");
+  modal.querySelector("#btn-close-preview-modal").addEventListener("click", () => {
+    modal.classList.remove("active");
+  });
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.classList.remove("active");
+  });
 }
 
 function renderQueue() {
@@ -496,7 +608,8 @@ function renderQueue() {
     } else if (item.selectedTarget === "mp3" && item.format === "wav") {
       savingsHtml = `<span class="savings-chip">~ -85% size</span>`;
     } else if (item.format === "pdf" && item.settings.dark_mode && item.settings.dark_mode !== "none") {
-      savingsHtml = `<span class="savings-chip" style="background: var(--color-mocha-light); color: var(--color-mocha); font-weight: 600;">🌙 ${item.settings.dark_mode.toUpperCase()}</span>`;
+      const modeLabel = getThemeDisplayName(item.settings.dark_mode);
+      savingsHtml = `<span class="savings-chip" style="background: var(--bg-surface-elevated); color: var(--color-primary); font-weight: 600; border: 1px solid var(--border-subtle);">${modeLabel}</span>`;
     } else if (item.selectedTarget === "pdf") {
       savingsHtml = `<span class="savings-chip">PDF Document</span>`;
     }
@@ -537,14 +650,24 @@ function renderQueue() {
 
     // 1. CARDS VIEW (Studio Deck)
     if (cardsWrapper) {
+      const isVisualFile = item.format === "pdf" || item.family === "image";
       const card = document.createElement("div");
       card.className = `morph-card ${isSelected ? 'selected-card' : ''}`;
       card.innerHTML = `
         <div class="morph-card-top">
           <div class="morph-card-file-info">
-            <div class="morph-card-icon" style="background: ${getFamilyBg(item.family)}; color: ${getFamilyColor(item.family)};">
-              ${ICONS[item.family] || ICONS.document}
-            </div>
+            ${isVisualFile ? `
+              <div class="morph-card-thumb-wrap" title="${item.name}">
+                <img src="${api.getPreviewRenderUrl(item.path, { page: 1, dpi: 60, dark_mode: item.settings.dark_mode })}" class="morph-card-thumb-img" alt="${item.format.toUpperCase()}" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
+                <div class="morph-card-icon" style="display: none; background: ${getFamilyBg(item.family)}; color: ${getFamilyColor(item.family)}; width: 100%; height: 100%;">
+                  ${ICONS[item.family] || ICONS.document}
+                </div>
+              </div>
+            ` : `
+              <div class="morph-card-icon" style="background: ${getFamilyBg(item.family)}; color: ${getFamilyColor(item.family)};">
+                ${ICONS[item.family] || ICONS.document}
+              </div>
+            `}
             <div style="min-width: 0;">
               <div class="morph-card-name" title="${item.name}">${item.name}</div>
               <div class="morph-card-meta">
@@ -729,6 +852,78 @@ function renderSettingsPanel() {
       </div>
   `;
 
+  const targetFmt = item.selectedTarget;
+
+  // Live Document & Dark Mode Preview (for PDF and image files)
+  const isVisualFile = item.format === "pdf" || item.family === "image";
+  if (isVisualFile) {
+    if (inspectorPreviewState.itemId !== item.id) {
+      inspectorPreviewState.itemId = item.id;
+      inspectorPreviewState.page = 1;
+      inspectorPreviewState.totalPages = (item.metadata && item.metadata.properties && item.metadata.properties.page_count) || 1;
+      inspectorPreviewState.showOriginal = false;
+
+      if (item.format === "pdf" && (!item.metadata || !item.metadata.properties || !item.metadata.properties.page_count)) {
+        api.getPreviewInfo(item.path).then(info => {
+          if (info && info.total_pages && info.total_pages > 1) {
+            inspectorPreviewState.totalPages = info.total_pages;
+            const ctrls = document.getElementById("preview-page-ctrls");
+            const lbl = document.getElementById("preview-page-lbl");
+            if (ctrls) ctrls.style.display = "flex";
+            if (lbl) lbl.textContent = `${inspectorPreviewState.page} / ${info.total_pages}`;
+          }
+        }).catch(() => {});
+      }
+    }
+
+    const currentTheme = item.settings.dark_mode || (targetFmt.startsWith("pdf_") ? targetFmt.replace("pdf_", "") : "none");
+    const activeDark = inspectorPreviewState.showOriginal ? "none" : currentTheme;
+    const contrastVal = item.settings.dark_mode_contrast !== undefined ? item.settings.dark_mode_contrast : 1.05;
+    const previewUrl = api.getPreviewRenderUrl(item.path, {
+      page: inspectorPreviewState.page,
+      dark_mode: activeDark,
+      contrast: contrastVal,
+      dpi: 110,
+      max_width: 800
+    });
+
+    html += `
+      <div class="inspector-preview-card">
+        <div class="inspector-preview-header">
+          <div class="preview-title-row">
+            <span style="width: 13px; height: 13px; color: var(--color-primary);">${ICONS.eye || ICONS.sliders}</span>
+            <span>Document Preview</span>
+          </div>
+          <div class="preview-page-controls" id="preview-page-ctrls" style="${inspectorPreviewState.totalPages > 1 ? 'display: flex;' : 'display: none;'}">
+            <button type="button" class="btn btn-ghost btn-xs" id="btn-preview-prev" title="Previous Page">‹</button>
+            <span id="preview-page-lbl" class="preview-page-indicator">${inspectorPreviewState.page} / ${inspectorPreviewState.totalPages}</span>
+            <button type="button" class="btn btn-ghost btn-xs" id="btn-preview-next" title="Next Page">›</button>
+          </div>
+        </div>
+
+        <div class="inspector-preview-viewport" id="inspector-preview-viewport" title="Click to enlarge preview">
+          <img id="inspector-preview-img" class="inspector-preview-img" src="${previewUrl}" alt="Preview" />
+          <span class="preview-mode-tag" id="preview-mode-badge">${inspectorPreviewState.showOriginal ? 'Original' : getThemeDisplayName(activeDark)}</span>
+        </div>
+
+        <div class="preview-toolbar-row">
+          <div class="preview-toggle-wrap">
+            <button type="button" class="preview-toggle-btn ${!inspectorPreviewState.showOriginal ? 'active' : ''}" id="btn-preview-theme" title="View with selected theme">
+              Dark Mode
+            </button>
+            <button type="button" class="preview-toggle-btn ${inspectorPreviewState.showOriginal ? 'active' : ''}" id="btn-preview-orig" title="View original document colors">
+              Original
+            </button>
+          </div>
+          <button type="button" class="btn btn-ghost btn-xs" id="btn-preview-expand" title="Open high-resolution fullscreen preview">
+            <span style="width: 12px; height: 12px;">${ICONS.maximize || ICONS.sliders}</span>
+            <span>Enlarge</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
   if (route && route.potential_info_loss) {
     html += `
       <div style="padding: var(--space-3); background: var(--color-warning-bg); border-left: 3px solid var(--color-warning); border-radius: var(--radius-sm); font-size: 11.5px; color: var(--color-warning); line-height: 1.4;">
@@ -736,8 +931,6 @@ function renderSettingsPanel() {
       </div>
     `;
   }
-
-  const targetFmt = item.selectedTarget;
 
   // 1. Image Quality & Compression
   if (["jpg", "jpeg", "webp"].includes(targetFmt)) {
@@ -830,31 +1023,31 @@ function renderSettingsPanel() {
           </button>
           <button type="button" class="pdf-theme-btn ${currentTheme === 'dark' ? 'active' : ''}" data-set-dark="dark" title="Charcoal black page with softened dull-white text">
             <span class="theme-dot" style="background: #18191c;"></span>
-            <span>🌙 Dark</span>
+            <span>Charcoal</span>
           </button>
           <button type="button" class="pdf-theme-btn ${currentTheme === 'oled' ? 'active' : ''}" data-set-dark="oled" title="Pure #000000 black page for OLED / battery saving">
             <span class="theme-dot" style="background: #000000; border: 1px solid #444;"></span>
-            <span>⚡ OLED</span>
+            <span>OLED</span>
           </button>
           <button type="button" class="pdf-theme-btn ${currentTheme === 'midnight' ? 'active' : ''}" data-set-dark="midnight" title="Deep navy midnight slate background">
             <span class="theme-dot" style="background: #0f172a;"></span>
-            <span>🌌 Midnight</span>
+            <span>Navy</span>
           </button>
           <button type="button" class="pdf-theme-btn ${currentTheme === 'sepia_dark' || currentTheme === 'sepia' ? 'active' : ''}" data-set-dark="sepia_dark" title="Warm dark mocha espresso reader">
             <span class="theme-dot" style="background: #1e1713;"></span>
-            <span>☕ Espresso</span>
+            <span>Espresso</span>
           </button>
           <button type="button" class="pdf-theme-btn ${currentTheme === 'sepia_light' ? 'active' : ''}" data-set-dark="sepia_light" title="Warm cream sepia paper eye-care mode">
             <span class="theme-dot" style="background: #fbf0d9; border: 1px solid #d4c5a9;"></span>
-            <span>📖 Sepia</span>
+            <span>Sepia</span>
           </button>
           <button type="button" class="pdf-theme-btn ${currentTheme === 'amber' ? 'active' : ''}" data-set-dark="amber" title="Vintage CRT amber on deep black">
             <span class="theme-dot" style="background: #ffb000;"></span>
-            <span>✦ Amber</span>
+            <span>Amber</span>
           </button>
           <button type="button" class="pdf-theme-btn ${currentTheme === 'invert' ? 'active' : ''}" data-set-dark="invert" title="Mathematical color inversion">
             <span class="theme-dot" style="background: linear-gradient(135deg, #000 50%, #fff 50%);"></span>
-            <span>⇄ Invert</span>
+            <span>Invert</span>
           </button>
         </div>
 
@@ -985,6 +1178,7 @@ function renderSettingsPanel() {
         if (key === "dark_mode_contrast") {
           const display = document.getElementById("val-dark-contrast");
           if (display) display.textContent = `${Math.round(val * 100)}%`;
+          updateLivePreview();
         } else {
           const display = document.getElementById(`val-${key}`);
           if (display) display.textContent = val + (key === "quality" ? "%" : "");
@@ -1002,11 +1196,59 @@ function renderSettingsPanel() {
     btn.addEventListener("click", () => {
       const mode = btn.getAttribute("data-set-dark");
       item.settings.dark_mode = mode === "none" ? "" : mode;
+      inspectorPreviewState.showOriginal = false;
       panelBody.querySelectorAll("[data-set-dark]").forEach(b => b.classList.remove("active"));
       btn.classList.add("active");
+      updateLivePreview();
       renderQueue();
     });
   });
+
+  // Live Preview Controls
+  const btnPrev = panelBody.querySelector("#btn-preview-prev");
+  if (btnPrev) {
+    btnPrev.addEventListener("click", () => {
+      if (inspectorPreviewState.page > 1) {
+        inspectorPreviewState.page--;
+        updateLivePreview();
+      }
+    });
+  }
+
+  const btnNext = panelBody.querySelector("#btn-preview-next");
+  if (btnNext) {
+    btnNext.addEventListener("click", () => {
+      if (inspectorPreviewState.page < inspectorPreviewState.totalPages) {
+        inspectorPreviewState.page++;
+        updateLivePreview();
+      }
+    });
+  }
+
+  const btnTheme = panelBody.querySelector("#btn-preview-theme");
+  if (btnTheme) {
+    btnTheme.addEventListener("click", () => {
+      inspectorPreviewState.showOriginal = false;
+      updateLivePreview();
+    });
+  }
+
+  const btnOrig = panelBody.querySelector("#btn-preview-orig");
+  if (btnOrig) {
+    btnOrig.addEventListener("click", () => {
+      inspectorPreviewState.showOriginal = true;
+      updateLivePreview();
+    });
+  }
+
+  const btnExpand = panelBody.querySelector("#btn-preview-expand");
+  const previewBox = panelBody.querySelector("#inspector-preview-viewport");
+  if (btnExpand) {
+    btnExpand.addEventListener("click", () => openFullscreenPreviewModal(item));
+  }
+  if (previewBox) {
+    previewBox.addEventListener("click", () => openFullscreenPreviewModal(item));
+  }
 
   panelBody.querySelectorAll("[data-set-quality]").forEach(btn => {
     btn.addEventListener("click", () => {

@@ -2,11 +2,12 @@
 
 import os
 import sys
+import io
 import subprocess
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Query
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 
 from app.config import config, VERSION, APP_NAME
 from app.core.registry import registry
@@ -335,6 +336,143 @@ def preview_specific_job_file(job_id: str, file_index: int):
         filename=p.name,
         media_type=media_type
     )
+
+
+@router.get("/preview/render")
+def render_preview_endpoint(
+    path: str = Query(...),
+    page: int = Query(1),
+    dark_mode: Optional[str] = Query(None),
+    contrast: float = Query(1.05),
+    dpi: int = Query(120),
+    max_width: int = Query(900)
+):
+    """
+    Renders an on-the-fly preview of an uploaded document (PDF) or image,
+    optionally applying real-time Dark Mode / Reader Mode color palette transformations.
+    """
+    p = Path(path).resolve()
+    if not p.exists() or not p.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    fmt = detect_file_format(p).format_id
+    total_pages = 1
+    current_page = 1
+
+    try:
+        if fmt == "pdf":
+            try:
+                import pypdfium2 as pdfium
+            except ImportError:
+                raise HTTPException(status_code=500, detail="pypdfium2 is required for PDF previews")
+
+            doc = pdfium.PdfDocument(str(p))
+            total_pages = len(doc)
+            if total_pages == 0:
+                raise HTTPException(status_code=400, detail="PDF contains 0 pages")
+
+            page_idx = max(0, min(page - 1, total_pages - 1))
+            current_page = page_idx + 1
+
+            scale = max(0.5, min(dpi / 72.0, 3.0))
+            pil_img = doc[page_idx].render(scale=scale).to_pil()
+
+            # Apply dark mode if requested
+            if dark_mode and dark_mode.lower() not in ("none", "false", "off", "0", ""):
+                from app.engines.pdf import PDFEngine
+                pil_img = PDFEngine.apply_dark_mode_to_image(pil_img, dark_mode, contrast=contrast)
+
+            # Limit width if excessive
+            if pil_img.width > max_width:
+                aspect = pil_img.height / pil_img.width
+                new_w = max_width
+                new_h = int(new_w * aspect)
+                pil_img = pil_img.resize((new_w, new_h))
+
+            if pil_img.mode != "RGB":
+                pil_img = pil_img.convert("RGB")
+
+            buf = io.BytesIO()
+            pil_img.save(buf, format="JPEG", quality=85, optimize=True)
+            return Response(
+                content=buf.getvalue(),
+                media_type="image/jpeg",
+                headers={
+                    "X-Total-Pages": str(total_pages),
+                    "X-Current-Page": str(current_page),
+                    "Cache-Control": "no-cache, no-store, must-revalidate"
+                }
+            )
+
+        elif fmt in ("png", "jpg", "jpeg", "webp", "bmp", "tiff", "gif", "ico"):
+            from PIL import Image
+            pil_img = Image.open(p)
+            if pil_img.mode in ("RGBA", "LA", "P"):
+                bg_color = (24, 25, 28) if (dark_mode and dark_mode.lower() not in ("none", "false", "off", "0", "")) else (255, 255, 255)
+                bg = Image.new("RGB", pil_img.size, bg_color)
+                if pil_img.mode == "RGBA":
+                    bg.paste(pil_img, mask=pil_img.split()[-1])
+                else:
+                    bg.paste(pil_img.convert("RGB"))
+                pil_img = bg
+            elif pil_img.mode != "RGB":
+                pil_img = pil_img.convert("RGB")
+
+            if dark_mode and dark_mode.lower() not in ("none", "false", "off", "0", ""):
+                from app.engines.pdf import PDFEngine
+                pil_img = PDFEngine.apply_dark_mode_to_image(pil_img, dark_mode, contrast=contrast)
+
+            if pil_img.width > max_width:
+                aspect = pil_img.height / pil_img.width
+                new_w = max_width
+                new_h = int(new_w * aspect)
+                pil_img = pil_img.resize((new_w, new_h))
+
+            buf = io.BytesIO()
+            pil_img.save(buf, format="JPEG", quality=85, optimize=True)
+            return Response(
+                content=buf.getvalue(),
+                media_type="image/jpeg",
+                headers={
+                    "X-Total-Pages": "1",
+                    "X-Current-Page": "1",
+                    "Cache-Control": "no-cache, no-store, must-revalidate"
+                }
+            )
+        else:
+            raise HTTPException(status_code=415, detail=f"Visual preview not supported for {fmt.upper()}")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Preview rendering failed: {str(e)}")
+
+
+@router.get("/preview/info")
+def get_preview_info_endpoint(path: str = Query(...)):
+    """Retrieve preview capabilities and page count for a file."""
+    p = Path(path).resolve()
+    if not p.exists() or not p.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    fmt = detect_file_format(p).format_id
+    total_pages = 1
+    if fmt == "pdf":
+        try:
+            import pypdfium2 as pdfium
+            doc = pdfium.PdfDocument(str(p))
+            total_pages = len(doc)
+        except Exception:
+            pass
+
+    return {
+        "path": str(p),
+        "filename": p.name,
+        "format": fmt,
+        "total_pages": total_pages,
+        "supports_dark_mode": fmt in ("pdf", "png", "jpg", "jpeg", "webp", "bmp", "tiff"),
+        "supports_visual_preview": fmt in ("pdf", "png", "jpg", "jpeg", "webp", "bmp", "tiff", "gif", "ico")
+    }
 
 
 @router.post("/open-folder")

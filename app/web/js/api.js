@@ -103,5 +103,17 @@ export const api = {
     body: JSON.stringify(settings)
   }),
 
-  cleanTemp: () => request("/api/settings/clean-temp", { method: "POST" })
+  cleanTemp: () => request("/api/settings/clean-temp", { method: "POST" }),
+
+  getPreviewInfo: (path) => request(`/api/preview/info?path=${encodeURIComponent(path)}`),
+
+  getPreviewRenderUrl: (path, options = {}) => {
+    const params = new URLSearchParams({ path });
+    if (options.page) params.append("page", options.page);
+    if (options.dark_mode) params.append("dark_mode", options.dark_mode);
+    if (options.contrast !== undefined) params.append("contrast", options.contrast);
+    if (options.dpi) params.append("dpi", options.dpi);
+    if (options.max_width) params.append("max_width", options.max_width);
+    return `/api/preview/render?${params.toString()}`;
+  }
 };

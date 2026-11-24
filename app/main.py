@@ -79,6 +79,25 @@ if (WEB_DIR / "assets").exists():
     app.mount("/assets", NoCacheStaticFiles(directory=str(WEB_DIR / "assets")), name="assets")
 
 
+@app.get("/favicon.ico", include_in_schema=False)
+async def serve_favicon():
+    """Direct root favicon route required for browser bookmarks and tabs."""
+    ico_path = WEB_DIR / "assets" / "favicon.ico"
+    if not ico_path.exists():
+        ico_path = WEB_DIR / "assets" / "morphix.ico"
+    if ico_path.exists():
+        return FileResponse(str(ico_path), media_type="image/x-icon")
+    return HTMLResponse("", status_code=404)
+
+
+@app.get("/apple-touch-icon.png", include_in_schema=False)
+async def serve_apple_touch_icon():
+    icon_path = WEB_DIR / "assets" / "apple-touch-icon.png"
+    if icon_path.exists():
+        return FileResponse(str(icon_path), media_type="image/png")
+    return HTMLResponse("", status_code=404)
+
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
     index_file = WEB_DIR / "index.html"

@@ -126,10 +126,77 @@ async function loadDocumentFile(file) {
     document.getElementById("doc-detected-badge").textContent = meta.format.toUpperCase();
 
     renderDynamicDocFields(meta.format);
+    
+    docPreviewState = { page: 1, totalPages: 1 };
+    if (meta.format === "pdf") {
+      api.getPreviewInfo(res.path).then(info => {
+        if (info && info.total_pages && info.total_pages > 1) {
+          docPreviewState.totalPages = info.total_pages;
+          const ctrls = document.getElementById("doc-page-ctrls");
+          const lbl = document.getElementById("doc-page-lbl");
+          if (ctrls) ctrls.style.display = "flex";
+          if (lbl) lbl.textContent = `1 / ${info.total_pages}`;
+        }
+      }).catch(() => {});
+    }
+
     showToast(`Loaded ${file.name}`, "success", 1500);
   } catch (err) {
     showToast(`Failed to load document: ${err.message}`, "error");
   }
+}
+
+let docPreviewState = { page: 1, totalPages: 1 };
+
+function updateDocLivePreview() {
+  if (!loadedDoc) return;
+  const img = document.getElementById("doc-preview-img");
+  const badge = document.getElementById("doc-preview-badge");
+  const actionSel = document.getElementById("doc-action-sel");
+  const darkSel = document.getElementById("doc-darkmode-sel");
+  const contrastSlider = document.getElementById("doc-contrast-slider");
+  if (!img) return;
+
+  const targetFmt = actionSel ? actionSel.value : "pdf";
+  let activeDark = "none";
+  if (darkSel && darkSel.value && darkSel.value !== "none") {
+    activeDark = darkSel.value;
+  } else if (targetFmt.startsWith("pdf_")) {
+    activeDark = targetFmt.replace("pdf_", "");
+    if (activeDark === "sepia") activeDark = "sepia_dark";
+  }
+
+  const contrast = contrastSlider ? Number(contrastSlider.value) / 100.0 : 1.05;
+  const url = api.getPreviewRenderUrl(loadedDoc.path, {
+    page: docPreviewState.page,
+    dark_mode: activeDark,
+    contrast: contrast,
+    dpi: 120,
+    max_width: 800
+  });
+
+  img.classList.add("loading");
+  const temp = new Image();
+  temp.onload = () => {
+    img.src = url;
+    img.classList.remove("loading");
+  };
+  temp.onerror = () => {
+    img.classList.remove("loading");
+  };
+  temp.src = url;
+
+  const modeNames = {
+    dark: "Charcoal",
+    oled: "OLED",
+    midnight: "Navy",
+    sepia_dark: "Espresso",
+    sepia_light: "Sepia",
+    sepia: "Sepia",
+    amber: "Amber",
+    invert: "Invert"
+  };
+  if (badge) badge.textContent = activeDark === "none" ? "Original" : (modeNames[activeDark] || activeDark);
 }
 
 function renderDynamicDocFields(format) {
@@ -139,14 +206,33 @@ function renderDynamicDocFields(format) {
   if (fmt === "pdf") {
     fields.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+        <!-- Live Document & Dark Mode Preview -->
+        <div id="doc-preview-card" class="inspector-preview-card">
+          <div class="inspector-preview-header">
+            <div class="preview-title-row">
+              <span style="width: 13px; height: 13px; color: var(--color-primary);">${ICONS.eye || ICONS.sliders}</span>
+              <span>Document Visual Preview</span>
+            </div>
+            <div class="preview-page-controls" id="doc-page-ctrls" style="${docPreviewState.totalPages > 1 ? 'display: flex;' : 'display: none;'}">
+              <button type="button" class="btn btn-ghost btn-xs" id="doc-page-prev">‹</button>
+              <span id="doc-page-lbl" class="preview-page-indicator">${docPreviewState.page} / ${docPreviewState.totalPages}</span>
+              <button type="button" class="btn btn-ghost btn-xs" id="doc-page-next">›</button>
+            </div>
+          </div>
+          <div class="inspector-preview-viewport" style="height: 280px;" id="doc-preview-viewport">
+            <img id="doc-preview-img" class="inspector-preview-img" alt="Document Preview" />
+            <span class="preview-mode-tag" id="doc-preview-badge">Original</span>
+          </div>
+        </div>
+
         <div class="form-group">
           <label class="form-label">Action / Target Format</label>
           <select id="doc-action-sel" class="input-select">
             <option value="pdf">Modify PDF (Page selection, Rotation, Metadata)</option>
-            <option value="pdf_dark">🌙 Dark Mode PDF (Charcoal Black & Dull White Text)</option>
-            <option value="pdf_oled">⚡ OLED Pure Black PDF (High Contrast #000000)</option>
-            <option value="pdf_sepia">☕ Warm Sepia / Espresso Reader PDF</option>
-            <option value="pdf_midnight">🌌 Midnight Slate Blue PDF</option>
+            <option value="pdf_dark">PDF (Charcoal Dark)</option>
+            <option value="pdf_oled">PDF (OLED Pure Black)</option>
+            <option value="pdf_sepia">PDF (Warm Sepia / Espresso)</option>
+            <option value="pdf_midnight">PDF (Navy Midnight)</option>
             <option value="txt">Extract Plain Text (.txt)</option>
             <option value="png">Convert Pages to PNG Images (.png)</option>
             <option value="jpg">Convert Pages to JPEG Images (.jpg)</option>
@@ -161,13 +247,13 @@ function renderDynamicDocFields(format) {
           <label class="form-label">Reader & Dark Mode Palette</label>
           <select id="doc-darkmode-sel" class="input-select">
             <option value="none">Original (No dark filter)</option>
-            <option value="dark">🌙 Charcoal Dark (Black background, dull white text)</option>
-            <option value="oled">⚡ OLED Pure Black (True #000000, battery saver)</option>
-            <option value="midnight">🌌 Midnight Slate (Navy dark mode)</option>
-            <option value="sepia_dark">☕ Espresso Dark (Warm dark reader)</option>
-            <option value="sepia_light">📖 Sepia Paper (Warm cream eye-care)</option>
-            <option value="amber">✦ Amber Terminal (Retro amber on black)</option>
-            <option value="invert">⇄ Invert (Mathematical inverse)</option>
+            <option value="dark">Charcoal (Dark gray page, dull white text)</option>
+            <option value="oled">OLED (True #000000 black, high contrast)</option>
+            <option value="midnight">Navy (Deep midnight slate)</option>
+            <option value="sepia_dark">Espresso (Warm dark reader)</option>
+            <option value="sepia_light">Sepia (Warm cream paper)</option>
+            <option value="amber">Amber (Amber terminal)</option>
+            <option value="invert">Invert (Color inversion)</option>
           </select>
         </div>
 
@@ -237,6 +323,7 @@ function renderDynamicDocFields(format) {
     if (contrastSlider && contrastVal) {
       contrastSlider.addEventListener("input", (e) => {
         contrastVal.textContent = `${e.target.value}%`;
+        updateDocLivePreview();
       });
     }
 
@@ -245,6 +332,7 @@ function renderDynamicDocFields(format) {
         if (contrastGroup) {
           contrastGroup.style.display = e.target.value !== "none" ? "block" : "none";
         }
+        updateDocLivePreview();
       });
     }
 
@@ -279,7 +367,31 @@ function renderDynamicDocFields(format) {
         document.getElementById("doc-darkmode-group").style.display = "block";
         qualityGroup.style.display = ["jpg", "jpeg", "webp"].includes(val) ? "flex" : "none";
       }
+      updateDocLivePreview();
     });
+
+    const prevBtn = document.getElementById("doc-page-prev");
+    const nextBtn = document.getElementById("doc-page-next");
+    if (prevBtn) {
+      prevBtn.addEventListener("click", () => {
+        if (docPreviewState.page > 1) {
+          docPreviewState.page--;
+          document.getElementById("doc-page-lbl").textContent = `${docPreviewState.page} / ${docPreviewState.totalPages}`;
+          updateDocLivePreview();
+        }
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener("click", () => {
+        if (docPreviewState.page < docPreviewState.totalPages) {
+          docPreviewState.page++;
+          document.getElementById("doc-page-lbl").textContent = `${docPreviewState.page} / ${docPreviewState.totalPages}`;
+          updateDocLivePreview();
+        }
+      });
+    }
+
+    updateDocLivePreview();
 
   } else if (["docx", "doc"].includes(fmt)) {
     fields.innerHTML = `
