@@ -60,17 +60,31 @@ namespace Morphix
                 }
             }
 
+            if (IsPortListening("127.0.0.1", 7474))
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("  • Morphix is already running on http://127.0.0.1:7474");
+                Console.WriteLine("  • Opening web interface in your default browser...\n");
+                Console.ResetColor();
+                OpenBrowser("http://127.0.0.1:7474");
+                Thread.Sleep(1500);
+                return 0;
+            }
+
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.WriteLine("  • Launching Morphix Engine on http://127.0.0.1:7474 ...");
             Console.WriteLine("  • 100% Offline & Private - Zero Cloud Telemetry");
             Console.WriteLine("  • Press Ctrl+C in this window anytime to stop the server.\n");
             Console.ResetColor();
 
+            string runScript = Path.Combine(appDir, "run.py");
+            string pyArgs = File.Exists(runScript) ? "run.py" : "-m app.cli.main serve";
+
             // Launch Python server
             ProcessStartInfo psi = new ProcessStartInfo
             {
                 FileName = venvPython,
-                Arguments = "run.py",
+                Arguments = pyArgs,
                 WorkingDirectory = appDir,
                 UseShellExecute = false
             };
@@ -84,11 +98,12 @@ namespace Morphix
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Failed to launch Morphix: " + ex.Message);
                 Console.ResetColor();
+                Console.WriteLine("Press any key to close...");
                 Console.ReadKey();
                 return 1;
             }
 
-            // Launch browser in a background thread after brief warm-up
+            // Launch browser in a background thread after server is ready
             ThreadPool.QueueUserWorkItem(_ =>
             {
                 WaitForPortAndOpenBrowser("127.0.0.1", 7474);
@@ -96,40 +111,69 @@ namespace Morphix
 
             // Keep alive while server process runs
             serverProcess.WaitForExit();
-            return serverProcess.ExitCode;
+
+            // Exit silently — tray quit uses os._exit(0) so exit code is 0.
+            // Only show an error if something unexpected crashed.
+            if (serverProcess.ExitCode != 0 && serverProcess.ExitCode != -1073741510)
+            {
+                // -1073741510 = 0xC000013A = Windows CTRL+C/SIGINT — treat as clean exit
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("\nMorphix crashed (exit code: " + serverProcess.ExitCode + ").");
+                Console.WriteLine("Check logs for details. Press any key to close.");
+                Console.ResetColor();
+                Console.ReadKey();
+            }
+
+            return 0;
+        }
+
+        static bool IsPortListening(string host, int port)
+        {
+            try
+            {
+                using (var client = new TcpClient())
+                {
+                    var result = client.BeginConnect(host, port, null, null);
+                    bool success = result.AsyncWaitHandle.WaitOne(300);
+                    return success && client.Connected;
+                }
+            }
+            catch { return false; }
+        }
+
+        static void OpenBrowser(string url)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch { }
         }
 
         static void WaitForPortAndOpenBrowser(string host, int port)
         {
             bool ready = false;
-            for (int i = 0; i < 30; i++)
+            for (int i = 0; i < 60; i++)
             {
-                Thread.Sleep(400);
-                try
+                if (serverProcess != null && serverProcess.HasExited)
+                    return;
+
+                Thread.Sleep(300);
+                if (IsPortListening(host, port))
                 {
-                    using (var client = new TcpClient())
-                    {
-                        var result = client.BeginConnect(host, port, null, null);
-                        bool success = result.AsyncWaitHandle.WaitOne(400);
-                        if (success && client.Connected)
-                        {
-                            ready = true;
-                            break;
-                        }
-                    }
+                    ready = true;
+                    break;
                 }
-                catch { }
             }
 
-            try
+            if (ready)
             {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = "http://127.0.0.1:" + port,
-                    UseShellExecute = true
-                });
+                OpenBrowser("http://127.0.0.1:" + port);
             }
-            catch { }
         }
 
         static void KillServerProcess()

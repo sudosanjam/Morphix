@@ -203,6 +203,8 @@
   width: 26px;
   height: 26px;
   object-fit: contain;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
   border-radius: var(--radius-sm);
   filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.4));
   transition: transform var(--transition-spring);

@@ -62,7 +62,7 @@ class SystemTrayService:
         self.thread.start()
 
     def stop(self):
-        """Remove the tray icon and restore the console if running."""
+        """Remove the tray icon. Console stays hidden — no popup on shutdown."""
         self._is_running = False
         if sys.platform != "win32" or not self.tray_hwnd:
             return
@@ -73,16 +73,7 @@ class SystemTrayService:
             win32gui.PostMessage(self.tray_hwnd, win32gui.WM_CLOSE, 0, 0)
         except Exception:
             pass
-
-        # If console was hidden, restore it on shutdown
-        if self.console_hwnd and not self.console_visible:
-            try:
-                import win32gui
-                import win32con
-                win32gui.ShowWindow(self.console_hwnd, win32con.SW_SHOW)
-                self.console_visible = True
-            except Exception:
-                pass
+        # Intentionally do NOT restore the console window — keep it hidden.
 
     def _run_tray_loop(self):
         try:
@@ -210,11 +201,17 @@ class SystemTrayService:
             pass
 
     def _quit_application(self):
-        self.stop()
+        """Exit immediately and silently — no console popup, no confirmation."""
+        try:
+            import win32gui
+            win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, (self.tray_hwnd, 0))
+        except Exception:
+            pass
         if self.on_exit:
             try:
                 self.on_exit()
             except Exception:
                 pass
-        import signal
-        os.kill(os.getpid(), signal.SIGINT)
+        # os._exit bypasses Python cleanup and exits with code 0 immediately.
+        # This avoids SIGINT (which gives non-zero exit) and any "Press any key" prompts.
+        os._exit(0)
